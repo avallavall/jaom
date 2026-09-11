@@ -1,7 +1,7 @@
 # JAOM — Specification
 
 **Project:** JAOM — Just Another Optimization Module (Odoo)
-**Status:** Draft v0.1 — 2026-09-11
+**Status:** Draft v0.2 — 2026-09-11 (Q5 decided: Odoo 19)
 **Supersedes:** nothing (first spec). Operationalizes `jaot-odoo-brief.md` (2026-07-29).
 **Companion document:** `PLAN.md` (phases, tasks, execution protocol).
 
@@ -118,7 +118,7 @@ subset of modules, including OCA and custom development.
 | Q2 | Deployment: customer-self-hosted JAOT vs jaot.io SaaS | P2 (auth/URL), P7 | Customer-self-hosted |
 | Q3 | Privacy: customers that refuse data leaving Odoo? | `jaot_local_solver` priority (v2) | Not a v1 requirement |
 | Q4 | Audience: partners vs end users | UI depth (P3) | Partner-grade configuration, simple happy path |
-| Q5 | Target Odoo version | P1.1, everything downstream | Odoo 19 Community |
+| Q5 | Target Odoo version | — (answered 2026-09-11) | **DECIDED: Odoo 19 Community** — single target version in v1 |
 | Q6 | MVP domain: routing vs production scheduling | P3 | Routing (brief §7) |
 | Q7 | LLM-assisted binding in v1? | P6.4 | No — v2 (brief recommendation) |
 
@@ -388,8 +388,8 @@ See §4.6: fix-all-variables re-solve (no native evaluate-only in v3.9.0).
 
 ## 9. Target platform
 
-- Odoo **19 Community** (Q5 default; single target version in v1; exact
-  LTS/stable status verified at PLAN P1.1).
+- Odoo **19 Community** (DECIDED by the maintainer, 2026-09-11; single target
+  version in v1; exact LTS/stable status verified at PLAN P1.1).
 - Python and PostgreSQL per Odoo 19 (verified at P1.1).
 - Development and CI: Docker (odoo + postgres + pinned jaot image).
 

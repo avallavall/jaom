@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v0.1 — 2026-09-11
+**Status:** v0.2 — 2026-09-11
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -47,8 +47,8 @@ external user live.
 
 ## Phase 0 — Decisions (human: the maintainer)
 
-**Prerequisites:** none. **Blocks:** P2 (Q1), P2/P7 (Q2), P3 (Q5, Q6), P6.4
-(Q7).
+**Prerequisites:** none. **Blocks:** P2 (Q1), P2/P7 (Q2), P3 (Q6), P6.4
+(Q7). (Q5 is already DECIDED: Odoo 19, 2026-09-11.)
 
 | Task | Action |
 |---|---|
@@ -56,7 +56,7 @@ external user live.
 | P0.2 | Answer **Q2** (deployment: self-hosted JAOT vs SaaS) |
 | P0.3 | Answer **Q3** (privacy: `jaot_local_solver` required?) |
 | P0.4 | Answer **Q4** (audience: partners vs end users) |
-| P0.5 | Answer **Q5** (target Odoo version; default 19) |
+| P0.5 | ~~Answer Q5~~ — **answered 2026-09-11: Odoo 19 (DECIDED)** |
 | P0.6 | Answer **Q6** (MVP domain: routing vs production) |
 | P0.7 | Answer **Q7** (LLM-assisted binding in v1?) |
 
@@ -65,7 +65,8 @@ rows keep their documented defaults.
 
 ## Phase 1 — Research (brief §8)
 
-**Prerequisites:** P0.5 and P0.6 (defaults may stand — mark them). Produces
+**Prerequisites:** P0.6 (default may stand — mark it; P0.5 is already
+DECIDED: Odoo 19). Produces
 notes in `docs/research/` — notes, not code (the spike excepted).
 
 - **P1.1** (brief A, ~½ day) Stand up Odoo 19 Community + Postgres locally
