@@ -1,9 +1,7 @@
 # A — Odoo 19 terrain (research note)
 
-**Status (2026-09-11):** doc/source-level verification **complete**. The
-remaining part of PLAN P1.1 is the live stand-up: `docker compose` with
-`odoo:19` + `postgres:16`, first boot, and a live metamodel smoke query.
-This note does **not** claim that was done.
+**Status (2026-09-11):** **complete** — doc/source-level verification and
+the live stand-up (PLAN P1.1) are both done; the live evidence is in §9.
 
 **Method.** Checked against the `odoo/odoo` **19.0 branch** (full source
 tarball fetched 2026-09-11, grepped locally) and the official 19.0 docs
@@ -56,8 +54,10 @@ without any server flag.
 - `19.0` is the current stable series: docs version switcher lists
   `master`, `saas-19.4`, `18.0`, … (19 is the latest numbered release).
   `odoo/release.py` (19.0): `version_info = (19, 0, 0, FINAL, 0, '')`.
-- **`odoo:19` / `odoo:19.0` docker images exist** (Docker Hub, daily builds
-  through `19.0-20260908`) → the P1.1 compose is runnable.
+- **`odoo:19` / `odoo:19.0` docker images exist** (Docker Hub *library*
+  namespace — the pull name is `odoo:19.0`, **not** `odoo/odoo`; that org
+  repo 404s on Docker Hub as of 2026-09-11; daily builds through
+  `19.0-20260908`) → pulled and booted live on 2026-09-11 (see §9).
 - Q5 (target = Odoo 19) remains the right call.
 
 ## 4. Platform requirements — VERIFIED (SPECS §9)
@@ -141,10 +141,36 @@ fully present in 19.
   docs at `developer/reference/upgrades/`. The full 19.0 link index (944
   pages) is in [`../rag_odoo19.md`](../rag_odoo19.md).
 
-## 9. Still open — the rest of P1.1 (live checks only)
+## 9. P1.1 live verification (2026-09-11) — DONE
 
-1. `docker compose` up with `odoo:19` + `postgres:16`; first boot green.
-2. Live metamodel smoke: `ir.module.module` / `ir.model.fields` queries
-   against a running 19.0 DB.
-3. Confirm the bridge `auto_install` actually fires in a real session
-   (P3.1 re-proves this, but an early check is cheap).
+Run on this machine (Docker Desktop 29.2.1, Windows) with the committed dev
+stack `dev/docker-compose.yml` (`odoo:19.0` + `postgres:16`; PG published on
+127.0.0.1:5433 so the JAOT dev stack's 5432 stays free; Odoo on 8069).
+
+1. **First boot green.** `docker compose up -d` → `jaom_db` healthy,
+   `jaom_odoo` serving. DB init:
+   `docker compose run --rm odoo odoo -d odoo --stop-after -i stock,delivery,jaot_probe`
+   → `Modules loaded.`, `Registry loaded in 40.229s`, clean shutdown,
+   compose exit 0. The server reports `19.0-20260908`.
+2. **Live metamodel smoke — ALL PASS** (`python dev/odoo_smoke.py`, XML-RPC
+   as admin): server 19.x; `stock` / `delivery` installed;
+   `res.partner.partner_latitude` / `partner_longitude` present, ttype
+   `float`; `x` / `y` gone from `res.partner`; `stock.picking` model
+   exists; `base_geolocalize` uninstalled (not auto-installed).
+3. **`auto_install` fires live.** The throwaway probe module `jaot_probe`
+   (`depends: [stock]`, `auto_install: True`) was found in `installed`
+   state after the DB init above — the trigger fired on `stock` install on
+   a running 19.0. P3.1 re-proves this with the real `jaot_stock` bridge.
+   The probe was then removed (files deleted; module uninstalled in the DB
+   via `ir.module.module.button_immediate_uninstall`), leaving the dev DB
+   and the repo clean; the smoke script skips the probe check when the
+   probe is gone.
+
+Pitfalls met (for the record):
+
+- Official image pull name is the library form `odoo:19.0`; `odoo/odoo`
+  404s on Docker Hub as of 2026-09-11.
+- `ir.model.fields` has **no** `stored` field on 19 (the smoke uses
+  `ttype` only; stored-ness is source-verified in §7).
+- `ir.module.module.button_remove_uninstall` does not exist on 19 —
+  the immediate-uninstall method is `button_immediate_uninstall`.

@@ -1,8 +1,10 @@
 # JAOM — Specification
 
 **Project:** JAOM — Just Another Optimization Module (Odoo)
-**Status:** Draft v0.4 — 2026-09-11 (Q5 decided: Odoo 19; kickoff brief
-imported into the repo; Odoo 19 terrain verified at doc/source level —
+**Status:** Draft v0.5 — 2026-09-11 (Phase 0 answered by the maintainer:
+Q2 self-hosted, Q4 partners, Q6 routing, Q7 no LLM in v1 — §3.3; Q1
+recommendation issued, final word awaited; kickoff brief imported into the
+repo; Odoo 19 terrain verified at doc/source level —
 `docs/research/A-odoo-terrain.md`)
 **Supersedes:** nothing (first spec). Operationalizes the kickoff brief
 `jaot-odoo-brief.md` (2026-07-29, kept in this directory).
@@ -60,10 +62,10 @@ What JAOM is **not**:
 - Not an autopilot. Nothing writes production records without explicit human
   confirmation; nothing an LLM proposes is applied without human confirmation.
 
-### 1.1 Users and target installation (OPEN — Q4)
+### 1.1 Users and target installation (DECIDED — Q4)
 
-Default assumption: primary audience is Odoo partners/integrators installing
-for their customers; the UI must still be usable by end customers who are not
+Primary audience (DECIDED, Q4): Odoo partners/integrators installing for
+their customers; the UI must still be usable by end customers who are not
 optimization experts. Target installation: Odoo Community with an arbitrary
 subset of modules, including OCA and custom development.
 
@@ -74,7 +76,7 @@ subset of modules, including OCA and custom development.
 - `jaot_base`: configuration, HTTP client, recipes, role-based bindings,
   scenario lifecycle, apply engine, `ir.cron`-based async polling, security,
   tests with synthetic data.
-- **One domain end-to-end: delivery routing** (PROPOSED — Q6): `jaot_stock`
+- **One domain end-to-end: delivery routing** (DECIDED — Q6): `jaot_stock`
   bridge (`stock` + `delivery` + partner geo), VRP recipe, scenario views
   inside the Delivery menu, apply + revert. (Odoo 19 partner geo fields are
   `partner_latitude` / `partner_longitude`; the historical `x` / `y` fields no
@@ -88,7 +90,8 @@ subset of modules, including OCA and custom development.
 
 - Further bridges: `jaot_mrp` (production scheduling), `jaot_hr` (coverage vs
   `hr_holidays`), `jaot_purchase`, `jaot_account` — ordered by customer demand.
-- Opportunity scan + LLM-assisted binding (D4) — only if Q7 = yes.
+- Opportunity scan + LLM-assisted binding (D4) — v2 (Q7 DECIDED: not in v1;
+  the §4.7 contract applies when it lands).
 - `jaot_local_solver` (optional, not auto-installable, degraded mode with
   embedded HiGHS for on-premise without connectivity) — only if Q3 = yes.
 
@@ -119,13 +122,18 @@ subset of modules, including OCA and custom development.
 
 | # | Question | Blocks | Working default meanwhile |
 |---|---|---|---|
-| Q1 | License: commercial intent? (LGPL-3 / AGPL-3 / OPL-1 dual) | PLAN P2.1 (manifest), P7 | LGPL-3, zero OCA dependencies (brief §6 option A) |
-| Q2 | Deployment: customer-self-hosted JAOT vs jaot.io SaaS | P2 (auth/URL), P7 | Customer-self-hosted |
+| Q1 | License: commercial intent? (LGPL-3 / AGPL-3 / OPL-1 dual) | PLAN P2.1 (manifest), P7 | LGPL-3, zero OCA dependencies (brief §6 option A). Maintainer 2026-09-11: leans Apache-2.0 for family consistency with JAOT/JAOS; agent recommendation: **LGPL-3** — Odoo Community is LGPL-3 and add-ons install inside it; JAOM shares zero code with Apache-2.0 JAOT (a pure HTTP contract, so the sibling license constrains nothing); LGPL-3 is the ecosystem norm for App Store distribution; per-bridge AGPL-3 stays available if a bridge ever needs an OCA module (§8). Final decision awaited before P2.1; the LGPL-3 default stands meanwhile. |
 | Q3 | Privacy: customers that refuse data leaving Odoo? | `jaot_local_solver` priority (v2) | Not a v1 requirement |
-| Q4 | Audience: partners vs end users | UI depth (P3) | Partner-grade configuration, simple happy path |
-| Q5 | Target Odoo version | — (answered 2026-09-11) | **DECIDED: Odoo 19 Community** — single target version in v1 |
-| Q6 | MVP domain: routing vs production scheduling | P3 | Routing (brief §7) |
-| Q7 | LLM-assisted binding in v1? | P6.4 | No — v2 (brief recommendation) |
+
+### 3.3 Phase 0 decisions — answered by the maintainer
+
+| # | Question | Decision | Date |
+|---|---|---|---|
+| Q2 | Deployment: customer-self-hosted JAOT vs jaot.io SaaS | **DECIDED: customer-self-hosted** (one JAOT instance per company, §6.1) | 2026-09-11 |
+| Q4 | Audience: partners vs end users | **DECIDED: partners/integrators** — partner-grade configuration, simple happy path | 2026-09-11 |
+| Q5 | Target Odoo version | **DECIDED: Odoo 19 Community** — single target version in v1 | 2026-09-11 |
+| Q6 | MVP domain: routing vs production scheduling | **DECIDED: delivery routing** (`jaot_stock`, VRP recipe) | 2026-09-11 |
+| Q7 | LLM-assisted binding in v1? | **DECIDED: no — v2** (brief recommendation; the §4.7 contract applies when it lands) | 2026-09-11 |
 
 ## 4. Architecture
 
@@ -324,7 +332,7 @@ under `app/` and `openapi.json` (194 endpoints under `/api/v2`).
 
 ### 6.1 Instance and auth
 
-- One JAOT instance per company (default: customer-self-hosted — Q2).
+- One JAOT instance per company (DECIDED: customer-self-hosted — Q2).
 - Auth: **Bearer API key** (JAOT `/api/v2/keys/`). Stored per §5.1.
 - Connectivity check: `GET /api/v2/health/status` +
   `GET /api/v2/solvers/available` with the key.

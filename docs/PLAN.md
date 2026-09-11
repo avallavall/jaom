@@ -31,7 +31,7 @@ who verifies).
 
 | Phase | Task | Status | Updated | Commit |
 |---|---|---|---|---|
-| P1.1 | A-odoo-terrain: Odoo 19 verification at doc/source level (auto_install, timeouts, module classes, Python/PG, geo fields, layout) — full 19.0 docs link index in `docs/rag_odoo19.md`; live docker stand-up still to do | doing (partial) | 2026-09-11 | |
+| P1.1 | A-odoo-terrain: Odoo 19 verification at doc/source level + live stand-up (dev compose `odoo:19.0` + `postgres:16`; metamodel smoke ALL PASS; auto_install verified live with a probe, then removed) — full 19.0 docs link index in `docs/rag_odoo19.md`; live evidence in the note §9 | done | 2026-09-11 | fdf3ada |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 
@@ -48,18 +48,19 @@ external user live.
 
 ## Phase 0 — Decisions (human: the maintainer)
 
-**Prerequisites:** none. **Blocks:** P2 (Q1), P2/P7 (Q2), P3 (Q6), P6.4
-(Q7). (Q5 is already DECIDED: Odoo 19, 2026-09-11.)
+**Prerequisites:** none. **Blocks:** P2.1 (Q1 — recommendation issued
+2026-09-11, final word awaited). Q2/Q4/Q6/Q7 answered 2026-09-11 (SPECS
+§3.3). Q5 already DECIDED: Odoo 19.
 
 | Task | Action |
 |---|---|
-| P0.1 | Answer **Q1** (license: LGPL-3 / AGPL-3 / OPL-1 dual) |
-| P0.2 | Answer **Q2** (deployment: self-hosted JAOT vs SaaS) |
+| P0.1 | Q1 (license) — **OPEN**: recommendation LGPL-3 issued 2026-09-11; maintainer leans Apache-2.0 (family consistency with JAOT/JAOS); final decision awaited before P2.1. Does not block P1. |
+| P0.2 | ~~Answer Q2~~ — **answered 2026-09-11: customer-self-hosted (DECIDED, SPECS §3.3)** |
 | P0.3 | Answer **Q3** (privacy: `jaot_local_solver` required?) |
-| P0.4 | Answer **Q4** (audience: partners vs end users) |
+| P0.4 | ~~Answer Q4~~ — **answered 2026-09-11: partners/integrators (DECIDED, SPECS §3.3)** |
 | P0.5 | ~~Answer Q5~~ — **answered 2026-09-11: Odoo 19 (DECIDED)** |
-| P0.6 | Answer **Q6** (MVP domain: routing vs production) |
-| P0.7 | Answer **Q7** (LLM-assisted binding in v1?) |
+| P0.6 | ~~Answer Q6~~ — **answered 2026-09-11: delivery routing (DECIDED, SPECS §3.3)** |
+| P0.7 | ~~Answer Q7~~ — **answered 2026-09-11: no LLM in v1 (DECIDED, SPECS §3.3)** |
 
 **Exit:** SPECS §3.2 updated — every answered row flips to DECIDED; remaining
 rows keep their documented defaults.
