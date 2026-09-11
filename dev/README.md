@@ -28,6 +28,14 @@ python dev/metamodel_probe.py --models stock.picking,stock.move
   available. Stdlib only.
 - `metamodel_probe.py` — module states and per-model field lists over
   XML-RPC; the tool the research notes quote for live evidence.
+- `jaot_contract_probe.py` — JAOT contract probe (PLAN P1.3): runs the full
+  SPECS §6 flow (health → solvers → templates → preview → async solve →
+  poll → execution → exact-analysis → scenario-analysis → infeasibility)
+  against a live instance and prints the frozen field names. Needs the
+  `JAOT_API_KEY` env var (create one with
+  `docker compose exec api python scripts/ensure_admin_api_key.py` in the
+  `../jaot` repo — never commit the key); optional `JAOT_BASE`
+  (default `http://127.0.0.1:8001`).
 
 ## Current dev DB baseline
 

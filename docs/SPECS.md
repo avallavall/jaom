@@ -326,8 +326,12 @@ reproducibility), `state`, `jaot_task_id` (Char, unique when set),
 
 ## 6. Integration contract with JAOT
 
-**VERIFIED 2026-09-11 against local JAOT v3.9.0 (commit `c5a07e2`)** — sources
-under `app/` and `openapi.json` (194 endpoints under `/api/v2`).
+**VERIFIED 2026-09-11 against local JAOT v3.9.0 (commit `c5a07e2`)** — first
+at source level (sources under `app/` and `openapi.json`, 194 endpoints
+under `/api/v2`), then **live end-to-end with real calls**
+(`docs/research/C-jaot-contract.md`: frozen response field names + deltas
+D1–D3; the live spec is served at `GET /openapi.json` and is the 3.9.0
+document — the committed `openapi.json` is a stale 3.8.0).
 
 ### 6.1 Instance and auth
 
@@ -344,9 +348,9 @@ under `app/` and `openapi.json` (194 endpoints under `/api/v2`).
 | 2 | `GET /api/v2/solve/async/{task_id}` | Poll until terminal (default 10 s). `POST …/cancel` to cancel |
 | 3 | `GET /api/v2/models/executions/{execution_id}` | Solution: variable values, objective, gap, solver, time |
 | 4 | `GET /api/v2/models/executions/{id}/exact-analysis` | Sync; binding constraints, slack/utilization — exact for the integer solution |
-| 5 | `POST /api/v2/models/executions/{id}/scenario-analysis` → poll `GET` | What-if batch (real re-solves; time-limited rows are bounds, not values) |
+| 5 | `POST /api/v2/models/executions/{id}/scenario-analysis` → poll `GET` | **No request body** — the what-if batch is auto-derived from the execution (RHS relax/tighten per constraint + decision flips per variable); real re-solves under a budget; time-limited rows come back flagged (`SKIPPED_BUDGET` / `partial`), never silent |
 | 6 | `POST /api/v2/solve/{execution_id}/infeasibility-analysis` | Minimal conflicting constraint set when infeasible |
-| — | `GET /api/v2/solve/templates` · `…/templates/{id}/preview` · `…/templates/{id}/solve` | Template catalog; a VRP/routing generator exists (CVRP with nearest-neighbor warm start) |
+| — | `GET /api/v2/solve/templates` · `POST …/templates/{id}/preview` · `POST …/templates/{id}/solve` | Template catalog (102 templates live; query `category`/`featured`/`page`/`page_size`); **four routing generators** (`vehicle_routing`, `waste_collection_routing`, `drug_distribution`, `pick_route_optimization`); `preview` is **POST** (live delta D1) and returns the grounded problem — 2 trucks / 6 sites arc-assignment for the logistics routing template |
 | — | `POST /api/v2/triggers/` (+ schedule; signed webhook `X-Jaot-Signature`, HMAC-SHA256) | v2 candidate for scheduled re-solves that *push* to Odoo instead of Odoo polling |
 
 - Live progress WebSocket (`/api/v2/ws/executions/{task_id}`) exists but is
