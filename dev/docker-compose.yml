@@ -1,0 +1,56 @@
+# JAOM dev stack (PLAN.md P1.1): Odoo 19 Community + PostgreSQL 16.
+#
+# Layout: the repo root is mounted read-only at /mnt/extra-addons. Add-on
+# modules live at the repo root (SPECS.md §4.2 topology) and are picked up
+# by Odoo without rebuilding anything; top-level dirs without a
+# __manifest__.py (docs/, dev/, scripts/) are skipped by the module scan.
+#
+# Ports are offset from the JAOT dev compose (sibling repo jaot): its
+# postgres owns 127.0.0.1:5432, so this one uses 5433. Both stacks can run
+# at once — that is exactly the P1.3/P1.4 picture.
+#
+# Usage:
+#   docker compose -f dev/docker-compose.yml up -d
+#   # first DB init (installs the v1 routing domain + the P1.1 probe):
+#   docker compose -f dev/docker-compose.yml run --rm odoo \
+#     odoo -d odoo --stop-after -i stock,delivery,jaot_probe
+#   # live metamodel smoke:
+#   python dev/odoo_smoke.py
+
+services:
+  db:
+    image: postgres:16
+    container_name: jaom_db
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_DB: odoo
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - jaom_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo -d odoo"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  odoo:
+    # Official image lives in Docker Hub's library namespace: `odoo:19.0`,
+    # NOT `odoo/odoo` (that org repo 404s as of 2026-09-11).
+    image: odoo:19.0
+    container_name: jaom_odoo
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8069:8069"
+    environment:
+      PGHOST: db
+      PGUSER: odoo
+      PGPASSWORD: odoo
+    volumes:
+      - ..:/mnt/extra-addons:ro
+
+volumes:
+  jaom_pg_data:
