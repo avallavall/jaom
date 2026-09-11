@@ -8,10 +8,11 @@ who verifies).
 
 ## 0. Execution protocol (for the implementing session)
 
-1. **Session start:** read `CLAUDE.md`, `SPECS.md`, this plan, and the
-   progress table below. Verify the inherited state by actually running what
-   the last session claims (repo rule: a green signal you did not check
-   yourself is not evidence).
+1. **Session start:** read `CLAUDE.md`, `SPECS.md`, `jaot-odoo-brief.md`
+   (the kickoff brief, same directory), this plan, and the progress table
+   below. Verify the inherited state by actually running what the last
+   session claims (repo rule: a green signal you did not check yourself is
+   not evidence).
 2. Work the **first phase whose prerequisites are satisfied**, tasks in order,
    one task at a time.
 3. **Per task:** implement → **verify** (run and observe what you will claim)

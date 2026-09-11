@@ -1,8 +1,10 @@
 # JAOM — Specification
 
 **Project:** JAOM — Just Another Optimization Module (Odoo)
-**Status:** Draft v0.2 — 2026-09-11 (Q5 decided: Odoo 19)
-**Supersedes:** nothing (first spec). Operationalizes `jaot-odoo-brief.md` (2026-07-29).
+**Status:** Draft v0.3 — 2026-09-11 (Q5 decided: Odoo 19; kickoff brief
+imported into the repo)
+**Supersedes:** nothing (first spec). Operationalizes the kickoff brief
+`jaot-odoo-brief.md` (2026-07-29, kept in this directory).
 **Companion document:** `PLAN.md` (phases, tasks, execution protocol).
 
 ---
@@ -424,11 +426,13 @@ See §4.6: fix-all-variables re-solve (no native evaluate-only in v3.9.0).
 
 ## 12. References
 
-- `../../jaot-odoo-brief.md` — the kickoff brief (source of D1–D6-bis, the
-  trap list, MVP candidates, and confidence levels).
-- `projectes/jaot` (v3.9.0) — the platform this spec integrates with; §6 was
-  verified against its sources and `openapi.json`.
-- `projectes/jaos` — future in-house solver; when/wherever JAOT adopts it,
-  JAOM is unaffected (the adapter boundary is inside JAOT).
+- `jaot-odoo-brief.md` (this directory) — the kickoff brief (source of
+  D1–D6-bis, the trap list, MVP candidates, and confidence levels). Written
+  in Spanish; it is the historical record and is kept as-is.
+- <https://github.com/avallavall/jaot> (v3.9.0) — the platform this spec
+  integrates with; §6 was verified against a local checkout of its sources
+  and `openapi.json`.
+- <https://github.com/avallavall/jaos> — future in-house solver; when/wherever
+  JAOT adopts it, JAOM is unaffected (the adapter boundary is inside JAOT).
 - `jaot/docs/ROADMAP.md` — JAOM listed there as an official "Later /
   Exploring" item.
