@@ -21,7 +21,7 @@ Decision-status legend:
 - **VERIFIED** — checked against a local checkout of JAOT (v3.9.0, commit
   `c5a07e2`, 2026-09-01) or against Odoo sources, on the date stated.
 
-Rule inherited from the repo `CLAUDE.md`: OPEN items are **not** settled by
+Rule inherited from the repo `AGENTS.md`: OPEN items are **not** settled by
 inference. If an OPEN item is hit during execution, the affected task stops, the
 blocker is recorded, the maintainer is asked, and work continues on non-blocking
 tasks.

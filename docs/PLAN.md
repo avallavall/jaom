@@ -8,7 +8,7 @@ who verifies).
 
 ## 0. Execution protocol (for the implementing session)
 
-1. **Session start:** read `CLAUDE.md`, `SPECS.md`, `jaot-odoo-brief.md`
+1. **Session start:** read `AGENTS.md`, `SPECS.md`, `jaot-odoo-brief.md`
    (the kickoff brief, same directory), this plan, and the progress table
    below. Verify the inherited state by actually running what the last
    session claims (repo rule: a green signal you did not check yourself is
