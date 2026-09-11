@@ -1,8 +1,9 @@
 # JAOM — Specification
 
 **Project:** JAOM — Just Another Optimization Module (Odoo)
-**Status:** Draft v0.3 — 2026-09-11 (Q5 decided: Odoo 19; kickoff brief
-imported into the repo)
+**Status:** Draft v0.4 — 2026-09-11 (Q5 decided: Odoo 19; kickoff brief
+imported into the repo; Odoo 19 terrain verified at doc/source level —
+`docs/research/A-odoo-terrain.md`)
 **Supersedes:** nothing (first spec). Operationalizes the kickoff brief
 `jaot-odoo-brief.md` (2026-07-29, kept in this directory).
 **Companion document:** `PLAN.md` (phases, tasks, execution protocol).
@@ -75,7 +76,9 @@ subset of modules, including OCA and custom development.
   tests with synthetic data.
 - **One domain end-to-end: delivery routing** (PROPOSED — Q6): `jaot_stock`
   bridge (`stock` + `delivery` + partner geo), VRP recipe, scenario views
-  inside the Delivery menu, apply + revert.
+  inside the Delivery menu, apply + revert. (Odoo 19 partner geo fields are
+  `partner_latitude` / `partner_longitude`; the historical `x` / `y` fields no
+  longer exist — docs/research/A-odoo-terrain.md §7.)
 - **Scenario comparison** (D6-bis): baseline capture, KPI delta, guided
   what-if, staleness warning.
 - i18n: en + es.
@@ -144,8 +147,9 @@ jaom/
 └── jaot_account/    depends: ['jaot_base','account']           auto_install   # v2
 ```
 
-- `auto_install` semantics (boolean vs dependency list) verified for the target
-  version at PLAN P1.1.
+- `auto_install` semantics — **VERIFIED 2026-09-11 against the 19.0 source**:
+  both a boolean and a dependency list are accepted; the list restricts which
+  dependencies trigger the auto-install (docs/research/A-odoo-terrain.md §1).
 - Each bridge contributes: recipes + default bindings for its domain +
   extraction and apply logic + views inside that module's **existing menus**
   (no standalone "JAOT" menu — integration into the existing workflow is part
@@ -392,7 +396,9 @@ See §4.6: fix-all-variables re-solve (no native evaluate-only in v3.9.0).
 
 - Odoo **19 Community** (DECIDED by the maintainer, 2026-09-11; single target
   version in v1; exact LTS/stable status verified at PLAN P1.1).
-- Python and PostgreSQL per Odoo 19 (verified at P1.1).
+- Python ≥ 3.10 and PostgreSQL ≥ 13 — **VERIFIED 2026-09-11** against the 19.0
+  branch and the official docs; the PostgreSQL minimum was raised from 12 to 13
+  in version 19 (docs/research/A-odoo-terrain.md §4).
 - Development and CI: Docker (odoo + postgres + pinned jaot image).
 
 ## 10. Non-functional requirements

@@ -31,7 +31,7 @@ who verifies).
 
 | Phase | Task | Status | Updated | Commit |
 |---|---|---|---|---|
-| — | (the session fills this in; one row per task) | | | |
+| P1.1 | A-odoo-terrain: Odoo 19 verification at doc/source level (auto_install, timeouts, module classes, Python/PG, geo fields, layout) — full 19.0 docs link index in `docs/rag_odoo19.md`; live docker stand-up still to do | doing (partial) | 2026-09-11 | |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 
