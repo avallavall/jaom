@@ -32,6 +32,7 @@ who verifies).
 | Phase | Task | Status | Updated | Commit |
 |---|---|---|---|---|
 | P1.1 | A-odoo-terrain: Odoo 19 verification at doc/source level + live stand-up (dev compose `odoo:19.0` + `postgres:16`; metamodel smoke ALL PASS; auto_install verified live with a probe, then removed) — full 19.0 docs link index in `docs/rag_odoo19.md`; live evidence in the note §9 | done | 2026-09-11 | fdf3ada |
+| P1.2 | B-roles gate: hand-mapped the VRP recipe's nine roles vs standard Odoo 19 Community (live metamodel) and one OCA module in the same domain (`partner_delivery_schedule`, OCA/delivery-carrier 19.0 @ `543a240`, installed → binding simulated → uninstalled/removed). **Gate passed: D3 holds** — every required role binds to a standard source; vehicle capacity + distance matrix are parameter/config bindings; the OCA case moves exactly one binding with zero code change. Findings F1–F3 feed P2.3/P3.2. Live evidence + evidence log in the note §2–§6 | done | 2026-09-11 | ecd014a |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 
