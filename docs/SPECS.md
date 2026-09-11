@@ -1,10 +1,9 @@
 # JAOM — Specification
 
 **Project:** JAOM — Just Another Optimization Module (Odoo)
-**Status:** Draft v0.5 — 2026-09-11 (Phase 0 answered by the maintainer:
-Q2 self-hosted, Q4 partners, Q6 routing, Q7 no LLM in v1 — §3.3; Q1
-recommendation issued, final word awaited; kickoff brief imported into the
-repo; Odoo 19 terrain verified at doc/source level —
+**Status:** Draft v0.6 — 2026-09-11 (Phase 0 fully answered by the
+maintainer — §3.3, including Q1: LGPL-3; kickoff brief imported into the
+repo; Odoo 19 terrain verified at doc/source level and live —
 `docs/research/A-odoo-terrain.md`)
 **Supersedes:** nothing (first spec). Operationalizes the kickoff brief
 `jaot-odoo-brief.md` (2026-07-29, kept in this directory).
@@ -122,13 +121,13 @@ subset of modules, including OCA and custom development.
 
 | # | Question | Blocks | Working default meanwhile |
 |---|---|---|---|
-| Q1 | License: commercial intent? (LGPL-3 / AGPL-3 / OPL-1 dual) | PLAN P2.1 (manifest), P7 | LGPL-3, zero OCA dependencies (brief §6 option A). Maintainer 2026-09-11: leans Apache-2.0 for family consistency with JAOT/JAOS; agent recommendation: **LGPL-3** — Odoo Community is LGPL-3 and add-ons install inside it; JAOM shares zero code with Apache-2.0 JAOT (a pure HTTP contract, so the sibling license constrains nothing); LGPL-3 is the ecosystem norm for App Store distribution; per-bridge AGPL-3 stays available if a bridge ever needs an OCA module (§8). Final decision awaited before P2.1; the LGPL-3 default stands meanwhile. |
 | Q3 | Privacy: customers that refuse data leaving Odoo? | `jaot_local_solver` priority (v2) | Not a v1 requirement |
 
 ### 3.3 Phase 0 decisions — answered by the maintainer
 
 | # | Question | Decision | Date |
 |---|---|---|---|
+| Q1 | License: commercial intent? (LGPL-3 / AGPL-3 / OPL-1 dual) | **DECIDED: LGPL-3**, zero OCA dependencies in v1 (brief §6 option A); per-bridge AGPL-3 stays available if a bridge needs an OCA module (§8) | 2026-09-11 |
 | Q2 | Deployment: customer-self-hosted JAOT vs jaot.io SaaS | **DECIDED: customer-self-hosted** (one JAOT instance per company, §6.1) | 2026-09-11 |
 | Q4 | Audience: partners vs end users | **DECIDED: partners/integrators** — partner-grade configuration, simple happy path | 2026-09-11 |
 | Q5 | Target Odoo version | **DECIDED: Odoo 19 Community** — single target version in v1 | 2026-09-11 |
@@ -391,14 +390,12 @@ See §4.6: fix-all-variables re-solve (no native evaluate-only in v3.9.0).
 
 ## 8. Licensing and distribution
 
-- **Q1 default (working assumption):** `jaot_base` and all v1 bridges
-  **LGPL-3**, **zero OCA dependencies** (brief §6 option A).
+- **DECIDED (Q1, 2026-09-11):** `jaot_base` and all v1 bridges are
+  **LGPL-3** with **zero OCA dependencies** (brief §6 option A).
 - A bridge that later needs an OCA module is AGPL-3 and documents it in its
   manifest.
-- Channels (after Q1): GitHub (always), Odoo App Store free listing (default),
-  OCA (only on an explicit AGPL decision).
-- The license header is decided **before** PLAN P2.1 (it shapes manifests and
-  CI).
+- Channels: GitHub (always), Odoo App Store free listing (default), OCA
+  (only on an explicit AGPL decision for a specific bridge).
 
 ## 9. Target platform
 

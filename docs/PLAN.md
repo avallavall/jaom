@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v0.2 — 2026-09-11
+**Status:** v0.3 — 2026-09-11 (Phase 0 complete; P1.1 done)
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -48,13 +48,12 @@ external user live.
 
 ## Phase 0 — Decisions (human: the maintainer)
 
-**Prerequisites:** none. **Blocks:** P2.1 (Q1 — recommendation issued
-2026-09-11, final word awaited). Q2/Q4/Q6/Q7 answered 2026-09-11 (SPECS
-§3.3). Q5 already DECIDED: Odoo 19.
+**Prerequisites:** none. **Blocks:** nothing — Phase 0 complete; every
+question answered 2026-09-11 (SPECS §3.3).
 
 | Task | Action |
 |---|---|
-| P0.1 | Q1 (license) — **OPEN**: recommendation LGPL-3 issued 2026-09-11; maintainer leans Apache-2.0 (family consistency with JAOT/JAOS); final decision awaited before P2.1. Does not block P1. |
+| P0.1 | ~~Answer Q1~~ — **answered 2026-09-11: LGPL-3, zero OCA dependencies (DECIDED, SPECS §3.3)** |
 | P0.2 | ~~Answer Q2~~ — **answered 2026-09-11: customer-self-hosted (DECIDED, SPECS §3.3)** |
 | P0.3 | Answer **Q3** (privacy: `jaot_local_solver` required?) |
 | P0.4 | ~~Answer Q4~~ — **answered 2026-09-11: partners/integrators (DECIDED, SPECS §3.3)** |
