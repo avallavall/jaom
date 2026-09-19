@@ -74,10 +74,12 @@ class TestVrpE2E(TransactionCase):
 
         pickings = []
         for i in range(1, n_orders + 1):
+            # staggered (non-colinear) so the id-order tour and a reordered
+            # tour have different lengths -> a real baseline delta
             partner = self.env['res.partner'].create({
                 'name': 'Cust %d' % i,
-                'partner_latitude': 40.40 + i * 0.01,
-                'partner_longitude': -3.70 - i * 0.01,
+                'partner_latitude': 40.40 + (i % 2) * 0.10,
+                'partner_longitude': -3.70 - i * 0.05,
                 'company_id': company.id,
             })
             pickings.append(self._make_picking(
@@ -172,3 +174,48 @@ class TestVrpE2E(TransactionCase):
         with self._patch_client(FakeVrpClient()):
             with self.assertRaises(UserError):
                 sc.action_submit()
+
+    def test_baseline_delta(self):
+        """Fix-all baseline: pin the incumbent plan, re-solve, diff it
+        against the optimized plan (SPECS 4.6)."""
+        self._ensure_config()
+        _warehouse, pickings, vehicle = self._dataset(n_orders=3)
+        # incumbent plan: one vehicle in a suboptimal position order
+        # (p1 -> p3 -> p2), so it differs from the id-order optimized tour
+        positions = {pickings[0].id: 1, pickings[2].id: 2, pickings[1].id: 3}
+        for p in pickings:
+            p.jaot_vehicle_id = vehicle.id
+            p.jaot_route_sequence = positions[p.id]
+
+        sc = self._scenario()
+        fake = FakeVrpClient()
+        with self._patch_client(fake):
+            sc.action_submit()
+            self.assertEqual(sc.state, 'queued')
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        self.assertEqual(sc.state, 'solved')
+
+        with self._patch_client(fake):
+            baseline = sc.action_compare_baseline()
+        self.assertTrue(baseline)
+        self.assertTrue(baseline.is_baseline)
+        self.assertEqual(baseline.baseline_of_id.id, sc.id)
+        self.assertEqual(sc.baseline_scenario_id.id, baseline.id)
+        self.assertEqual(baseline.state, 'queued')
+
+        with self._patch_client(fake):
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        self.assertEqual(baseline.state, 'solved')
+
+        # the delta is written back onto the optimized scenario
+        ks = sc.kpi_summary
+        self.assertIn('baseline_objective', ks)
+        self.assertIn('optimized_objective', ks)
+        self.assertIn('delta_vs_baseline', ks)
+        self.assertNotEqual(ks['baseline_objective'],
+                            ks['optimized_objective'])
+        # p2 and p3 swapped positions; p1 kept its position
+        lines = {l.res_id: l for l in sc.scenario_line_ids}
+        self.assertTrue(lines[pickings[1].id].delta_vs_baseline)
+        self.assertTrue(lines[pickings[2].id].delta_vs_baseline)
+        self.assertFalse(lines[pickings[0].id].delta_vs_baseline)

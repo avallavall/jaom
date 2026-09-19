@@ -51,6 +51,13 @@ class JaotScenario(models.Model):
     data_stale = fields.Boolean(
         string='Solved against stale data', default=False, copy=False)
     baseline_scenario_id = fields.Many2one('jaot.scenario', copy=False)
+    is_baseline = fields.Boolean(
+        string='Baseline scenario', default=False, copy=False,
+        help='This scenario re-solves the recipe with every decision pinned '
+             'to the incumbent plan (SPECS 4.6).')
+    baseline_of_id = fields.Many2one(
+        'jaot.scenario', string='Baseline of', default=False, copy=False,
+        help='For a baseline scenario, the optimized scenario it belongs to.')
     kpi_summary = fields.Json(string='KPI summary', copy=False)
     request_payload = fields.Json(
         string='Request payload',
@@ -215,6 +222,7 @@ class JaotScenario(models.Model):
             'time_limit_seconds': config.solve_time_limit,
             'gap_tolerance': config.gap_tolerance,
             'solver_name': config.default_solver or None,
+            'is_baseline': self.is_baseline,
         }
         try:
             problem = formula.formulate(snapshot, config_meta)
@@ -245,6 +253,27 @@ class JaotScenario(models.Model):
         self.message_post(body=_("Submitted to JAOT (task %s).",
                                  self.jaot_task_id or '?'))
         return self
+
+    def action_compare_baseline(self):
+        """Build and submit the fix-all baseline for a solved scenario
+        (SPECS 4.6). A second scenario of the same recipe is created with
+        every decision pinned to the incumbent plan; once it is solved, the
+        KPI delta is written back onto this scenario by the reconcile."""
+        self.ensure_one()
+        if self.state != 'solved':
+            raise UserError(_("Only a solved scenario can be baselined."))
+        if self.baseline_scenario_id:
+            return self.baseline_scenario_id
+        baseline = self.create({
+            'name': f'{self.name} (baseline)',
+            'recipe_id': self.recipe_id.id,
+            'company_id': self.company_id.id,
+            'is_baseline': True,
+            'baseline_of_id': self.id,
+        })
+        self.baseline_scenario_id = baseline.id
+        baseline.action_submit()
+        return baseline
 
     def action_cancel(self):
         """queued/solving -> cancelled: POST …/cancel on the JAOT task."""
@@ -396,6 +425,57 @@ class JaotScenario(models.Model):
         self.message_post(body=_("Solved: objective %(o)s (%(s)s).",
                                  o=self.objective_value,
                                  s=solver_status or '?'))
+        if self.is_baseline and self.baseline_of_id:
+            self._store_baseline_delta(self.baseline_of_id)
+
+    def _store_baseline_delta(self, parent):
+        """Write the baseline-vs-optimized KPI delta onto the optimized
+        scenario (the parent) once this baseline scenario is solved."""
+        parent.ensure_one()
+        baseline_objective = self.objective_value
+        optimized_objective = parent.objective_value
+        sense = parent.objective_sense
+        if (baseline_objective is not None
+                and optimized_objective is not None):
+            delta = (baseline_objective - optimized_objective
+                     if sense != 'maximize'
+                     else optimized_objective - baseline_objective)
+        else:
+            delta = None
+        parent.baseline_scenario_id = self.id
+        summary = dict(parent.kpi_summary or {})
+        summary.update({
+            'baseline_objective': baseline_objective,
+            'optimized_objective': optimized_objective,
+            'delta_vs_baseline': delta,
+            'sense': sense,
+        })
+        parent.kpi_summary = summary
+        self._store_line_deltas(parent)
+
+    def _store_line_deltas(self, parent):
+        """Per-line diff of the optimized plan against the incumbent
+        (SPECS 4.6 line-by-line diff): which decision fields changed and by
+        how much, plus the KPI contribution swing."""
+        Line = self.env['jaot.scenario.line']
+        baseline_lines = {
+            (l.res_model, l.res_id): l
+            for l in Line.search([('scenario_id', '=', self.id)])}
+        for line in Line.search([('scenario_id', '=', parent.id)]):
+            base = baseline_lines.get((line.res_model, line.res_id))
+            base_dec = (base.decision or {}) if base else {}
+            delta = {}
+            for field, opt_val in (line.decision or {}).items():
+                base_val = base_dec.get(field)
+                if base_val != opt_val:
+                    delta[field] = {'baseline': base_val,
+                                    'optimized': opt_val}
+            if (base and line.kpi_contribution is not None
+                    and base.kpi_contribution is not None
+                    and line.kpi_contribution != base.kpi_contribution):
+                delta['kpi_delta'] = (line.kpi_contribution
+                                      - base.kpi_contribution)
+            line.delta_vs_baseline = delta or None
 
     # ------------------------------------------------------------------
     # apply engine (SPECS §4.5, D6)
