@@ -20,7 +20,8 @@ class FakeJaotClient:
     """
 
     def __init__(self, solver_status='optimal', poll_status='completed',
-                  model_values=None, scenario_analysis_job=None):
+                  model_values=None, scenario_analysis_job=None,
+                  solve_async_error=None):
         self.solver_status = solver_status
         self.poll_status = poll_status
         self._fixed_model_values = model_values
@@ -33,9 +34,15 @@ class FakeJaotClient:
         self.scenario_analysis_calls = 0
         self.scenario_analysis_get_calls = 0
         self._scenario_analysis_job = scenario_analysis_job
+        # when set, solve_async raises it (JAOT down / quota / solver error)
+        self.solve_async_error = solve_async_error
+        self.solve_async_calls = 0
 
     # -- submit / poll / cancel -----------------------------------------
     def solve_async(self, problem, solver_name=None, wait=False):
+        self.solve_async_calls += 1
+        if self.solve_async_error is not None:
+            raise self.solve_async_error
         self._problem = problem
         return {
             'task_id': self.task_id,
