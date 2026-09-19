@@ -22,6 +22,10 @@
                             class="btn-secondary"
                             invisible="state != 'applied'"
                             groups="jaot_base.group_manager"/>
+                    <button name="action_compare_baseline" type="object"
+                            string="Compare with baseline" class="btn-secondary"
+                            invisible="state != 'solved' or baseline_scenario_id"
+                            groups="jaot_base.group_manager"/>
                     <button name="action_check_staleness" type="object"
                             string="Check staleness" class="btn-link"
                             invisible="state not in ('solved','applied')"
@@ -54,6 +58,8 @@
                             <field name="applied_at"/>
                             <field name="applied_by"
                                   invisible="not applied"/>
+                            <field name="baseline_scenario_id"
+                                  invisible="not baseline_scenario_id"/>
                         </group>
                     </group>
                     <group string="JAOT identifiers" groups="base.group_system">
