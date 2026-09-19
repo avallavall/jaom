@@ -48,10 +48,10 @@ class JaotConfig(models.Model):
              'Char rather than a Selection: the solver set is dynamic per '
              'JAOT version, a static list would lie.')
 
-    _sql_constraints = [(
-        'company_id_uniq', 'unique (company_id)',
+    _company_id_uniq = models.Constraint(
+        'UNIQUE (company_id)',
         'One JAOT connection per company (SPECS §5.1).',
-    )]
+    )
 
     # ------------------------------------------------------------------
     # api key storage (ir.config_parameter, never on the model)

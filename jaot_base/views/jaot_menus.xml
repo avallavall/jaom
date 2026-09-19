@@ -13,6 +13,18 @@
         <field name="group_ids" eval="[(4, ref('jaot_base.group_user'))]"/>
     </record>
 
+    <record id="menu_jaot_recipe" model="ir.ui.menu">
+        <field name="name">Recipes</field>
+        <field name="parent_id" ref="menu_jaot_root"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="menu_jaot_binding" model="ir.ui.menu">
+        <field name="name">Bindings</field>
+        <field name="parent_id" ref="menu_jaot_root"/>
+        <field name="sequence">30</field>
+    </record>
+
     <record id="menu_jaot_config" model="ir.ui.menu">
         <field name="name">Configuration</field>
         <field name="parent_id" ref="menu_jaot_root"/>

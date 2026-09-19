@@ -26,6 +26,7 @@ No solver runs inside Odoo. No write happens without confirmation.
         'security/ir.model.access.csv',
         'security/jaot_rules.xml',
         'views/jaot_menus.xml',
+        'views/jaot_recipe_views.xml',
         'views/jaot_config_views.xml',
     ],
     'application': True,

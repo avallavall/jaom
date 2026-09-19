@@ -5,4 +5,22 @@
         <field name="model_id" ref="model_jaot_config"/>
         <field name="domain_force">['|',('company_id','in',company_ids),('company_id','=',False)]</field>
     </record>
+
+    <record id="jaot_recipe_company_rule" model="ir.rule">
+        <field name="name">jaot.recipe: multi-company</field>
+        <field name="model_id" ref="model_jaot_recipe"/>
+        <field name="domain_force">['|',('company_id','in',company_ids),('company_id','=',False)]</field>
+    </record>
+
+    <record id="jaot_recipe_role_company_rule" model="ir.rule">
+        <field name="name">jaot.recipe.role: multi-company (via recipe)</field>
+        <field name="model_id" ref="model_jaot_recipe_role"/>
+        <field name="domain_force">['|',('recipe_id.company_id','in',company_ids),('recipe_id.company_id','=',False)]</field>
+    </record>
+
+    <record id="jaot_binding_company_rule" model="ir.rule">
+        <field name="name">jaot.binding: multi-company</field>
+        <field name="model_id" ref="model_jaot_binding"/>
+        <field name="domain_force">['|',('company_id','in',company_ids),('company_id','=',False)]</field>
+    </record>
 </odoo>

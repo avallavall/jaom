@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_jaot_recipe_form" model="ir.ui.view">
+        <field name="name">jaot.recipe.form</field>
+        <field name="model">jaot.recipe</field>
+        <field name="arch" type="xml">
+            <form string="JAOT Recipe">
+                <header>
+                    <button name="action_validate" type="object"
+                            string="Validate"
+                            class="btn-secondary"
+                            groups="jaot_base.group_manager"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_show_bindings" type="object"
+                                class="oe_stat_button"
+                                icon="fa-link">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">Bindings</span>
+                            </div>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived"
+                          bg_color="bg-danger" invisible="active"/>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="domain"/>
+                            <field name="jaot_template_id"/>
+                        </group>
+                        <group>
+                            <field name="active" invisible="1"/>
+                            <field name="company_id"
+                                  groups="base.group_multi_company"/>
+                            <field name="description"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Roles" name="roles">
+                            <field name="recipe_role_ids"
+                                  groups="jaot_base.group_manager"
+                                  nolabel="1">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="kind"/>
+                                    <field name="required"/>
+                                    <field name="data_type"/>
+                                    <field name="semantics"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Bindings" name="bindings">
+                            <field name="binding_ids"
+                                  groups="jaot_base.group_manager"
+                                  nolabel="1" readonly="1">
+                                <list>
+                                    <field name="role_id"/>
+                                    <field name="res_model"/>
+                                    <field name="field_path"/>
+                                    <field name="domain"/>
+                                    <field name="expression"
+                                          groups="base.group_system"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_jaot_recipe_list" model="ir.ui.view">
+        <field name="name">jaot.recipe.list</field>
+        <field name="model">jaot.recipe</field>
+        <field name="arch" type="xml">
+            <list string="JAOT Recipes">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="domain"/>
+                <field name="jaot_template_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_jaot_binding_list" model="ir.ui.view">
+        <field name="name">jaot.binding.list</field>
+        <field name="model">jaot.binding</field>
+        <field name="arch" type="xml">
+            <list string="JAOT Bindings">
+                <field name="recipe_id"/>
+                <field name="role_id"/>
+                <field name="res_model"/>
+                <field name="field_path"/>
+                <field name="domain"/>
+                <field name="expression" groups="base.group_system"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_jaot_recipe" model="ir.actions.act_window">
+        <field name="name">Recipes</field>
+        <field name="res_model">jaot.recipe</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+
+    <record id="action_jaot_binding" model="ir.actions.act_window">
+        <field name="name">Bindings</field>
+        <field name="res_model">jaot.binding</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
