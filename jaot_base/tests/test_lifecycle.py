@@ -104,3 +104,22 @@ class TestScenarioLifecycle(TransactionCase):
         with self._patch_client(FakeJaotClient()):
             with self.assertRaises(UserError):
                 sc.action_submit()
+
+    def test_staleness(self):
+        """SPECS 4.6: re-hashing the source flags it stale when it changes."""
+        sc = self._scenario()
+        items = self.env['jaot.demo.item'].search(
+            [('company_id', '=', self._company().id)])
+        self.assertTrue(items)
+        fake = FakeJaotClient()
+        with self._patch_client(fake):
+            sc.action_submit()
+        self.assertTrue(sc.data_snapshot_hash)
+        self.assertFalse(sc.data_stale)
+        # unchanged data stays current
+        sc.action_check_staleness()
+        self.assertFalse(sc.data_stale)
+        # mutating a bound source field makes it stale
+        items[0].write({'weight': items[0].weight + 1})
+        sc.action_check_staleness()
+        self.assertTrue(sc.data_stale)
