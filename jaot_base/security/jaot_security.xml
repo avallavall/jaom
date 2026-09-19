@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Odoo 19 res.groups has no category_id (verified live); ordering via sequence. -->
+    <record id="group_user" model="res.groups">
+        <field name="name">JAOT: User</field>
+        <field name="sequence">50</field>
+        <field name="comment">Can run solves and view scenarios; applying requires the manager group (SPECS §5.9).</field>
+    </record>
+
+    <record id="group_manager" model="res.groups">
+        <field name="name">JAOT: Manager</field>
+        <field name="sequence">51</field>
+        <field name="implied_ids" eval="[(4, ref('group_user'))]"/>
+        <field name="comment">Manages configuration, recipes and bindings; can apply and revert scenarios (SPECS §5.9).</field>
+    </record>
+</odoo>

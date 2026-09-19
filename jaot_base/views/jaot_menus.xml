@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Base has no host application to hang its configuration on, so it
+        owns the app menu. Bridge modules (jaot_stock, ...) put their
+        scenario views inside the host module's existing menus (SPECS §4.2)
+        and do not add menus of their own.
+    -->
+    <!-- Odoo 19 renamed ir.ui.menu groups_id -> group_ids (verified live). -->
+    <record id="menu_jaot_root" model="ir.ui.menu">
+        <field name="name">JAOT</field>
+        <field name="sequence">90</field>
+        <field name="group_ids" eval="[(4, ref('jaot_base.group_user'))]"/>
+    </record>
+
+    <record id="menu_jaot_config" model="ir.ui.menu">
+        <field name="name">Configuration</field>
+        <field name="parent_id" ref="menu_jaot_root"/>
+        <field name="sequence">10</field>
+    </record>
+</odoo>
