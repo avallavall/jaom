@@ -68,6 +68,24 @@
         <field name="required" eval="True"/>
         <field name="semantics">Constant kg capacity bound per vehicle (no standard cargo field in Community — P1.2 finding F1).</field>
     </record>
+    <!-- Incumbent (current) plan, read back for the fix-all baseline (SPECS 4.6).
+         Not required: a fresh scenario has no current plan yet. -->
+    <record id="role_vrp_current_vehicle" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="name">current_vehicle</field>
+        <field name="kind">variable</field>
+        <field name="data_type">reference</field>
+        <field name="required" eval="False"/>
+        <field name="semantics">Vehicle currently assigned to the order (the incumbent plan used to build the baseline).</field>
+    </record>
+    <record id="role_vrp_current_sequence" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="name">current_sequence</field>
+        <field name="kind">variable</field>
+        <field name="data_type">number</field>
+        <field name="required" eval="False"/>
+        <field name="semantics">Current route position of the order in its vehicle (the incumbent plan).</field>
+    </record>
 
     <!-- ============ default bindings (default company) ============ -->
     <record id="binding_vrp_depot_lat" model="jaot.binding">
@@ -119,6 +137,22 @@
         <field name="recipe_id" ref="recipe_vrp"/>
         <field name="role_id" ref="role_vrp_vehicle_capacity"/>
         <field name="constant_value">1600.0</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_vrp_current_vehicle" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="role_id" ref="role_vrp_current_vehicle"/>
+        <field name="res_model">stock.picking</field>
+        <field name="field_path">jaot_vehicle_id</field>
+        <field name="domain">[("picking_type_code", "=", "outgoing"), ("state", "in", ("confirmed", "assigned"))]</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_vrp_current_sequence" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="role_id" ref="role_vrp_current_sequence"/>
+        <field name="res_model">stock.picking</field>
+        <field name="field_path">jaot_route_sequence</field>
+        <field name="domain">[("picking_type_code", "=", "outgoing"), ("state", "in", ("confirmed", "assigned"))]</field>
         <field name="company_id" ref="base.main_company"/>
     </record>
 </odoo>

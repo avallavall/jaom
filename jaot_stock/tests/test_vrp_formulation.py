@@ -28,6 +28,22 @@ def _snapshot():
     }
 
 
+def _snapshot_baseline():
+    """A snapshot whose orders carry an incumbent plan (current_vehicle /
+    current_sequence): all three orders on vehicle 100, positions 1, 2, 3
+    (a single tour depot -> 1 -> 2 -> 3 -> depot)."""
+    snap = _snapshot()
+    snap['stock.picking'] = {
+        1: {'order_lat': 40.41, 'order_lng': -3.71, 'order_demand': 10.0,
+            'current_vehicle': 100, 'current_sequence': 1},
+        2: {'order_lat': 40.42, 'order_lng': -3.72, 'order_demand': 20.0,
+            'current_vehicle': 100, 'current_sequence': 2},
+        3: {'order_lat': 40.43, 'order_lng': -3.73, 'order_demand': 5.0,
+            'current_vehicle': 100, 'current_sequence': 3},
+    }
+    return snap
+
+
 class TestVrpFormulation(TransactionCase):
 
     def test_formulate_shape(self):
@@ -78,3 +94,34 @@ class TestVrpFormulation(TransactionCase):
                          {'jaot_vehicle_id': 100, 'jaot_route_sequence': 3})
         self.assertTrue(all(l['res_model'] == 'stock.picking'
                             for l in lines))
+
+    def test_baseline_fixes_current_plan(self):
+        problem = Vrp().formulate(_snapshot_baseline(), {'is_baseline': True})
+        fixes = [c for c in problem['constraints']
+                 if c['name'].startswith('fix_')]
+        self.assertTrue(fixes)
+        # rebuild the pinned x variables and map them back to lines
+        model_values = {}
+        for c in fixes:
+            var, val = c['expression'].split(' = ')
+            model_values[var] = int(val)
+        lines = Vrp().map_solution(problem, model_values)
+        by_id = {l['res_id']: l for l in lines}
+        # every order keeps its incumbent vehicle and route position
+        self.assertEqual(by_id[1]['decision'],
+                         {'jaot_vehicle_id': 100, 'jaot_route_sequence': 1})
+        self.assertEqual(by_id[2]['decision'],
+                         {'jaot_vehicle_id': 100, 'jaot_route_sequence': 2})
+        self.assertEqual(by_id[3]['decision'],
+                         {'jaot_vehicle_id': 100, 'jaot_route_sequence': 3})
+
+    def test_baseline_infeasible_when_unassigned(self):
+        snap = _snapshot_baseline()
+        del snap['stock.picking'][3]['current_vehicle']  # order 3 has no plan
+        problem = Vrp().formulate(snap, {'is_baseline': True})
+        # no arc pinned to 1 points into node 3, so visit_3 is unsatisfiable
+        visited = set()
+        for c in problem['constraints']:
+            if c['name'].startswith('fix_') and c['expression'].endswith('= 1'):
+                visited.add(int(c['expression'].split(' = ')[0].split('_')[3]))
+        self.assertNotIn(3, visited)

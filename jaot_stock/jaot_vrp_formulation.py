@@ -140,6 +140,41 @@ class Vrp(JaotFormulation):
                             'expression': (f'u_{t}_{k} - u_{t}_{i} '
                                            f'+ {n}*x_{t}_{k}_{i} <= {n - 1}')})
 
+        # Baseline (SPECS 4.6 fix-all): a second scenario of the same recipe
+        # in which every decision variable is pinned to the incumbent
+        # (current) plan and re-solved. The incumbent comes from the
+        # current_vehicle / current_sequence roles in the snapshot. Pinning
+        # an unassigned order to no arc makes the re-solve infeasible, which
+        # the scenario reports as a finding, not a failure.
+        if config_meta.get('is_baseline'):
+            vehicle_index = {vid: t for t, vid in enumerate(vehicle_ids)}
+            tours = {}  # t -> [(position, node_index), ...]
+            for idx, oid in enumerate(order_ids):
+                o = orders[oid]
+                cv = o.get('current_vehicle')
+                cv_id = getattr(cv, 'id', cv)
+                seq = o.get('current_sequence') or 0
+                if cv_id is None or not seq:
+                    continue
+                t = vehicle_index.get(cv_id)
+                if t is None:
+                    continue
+                tours.setdefault(t, []).append((int(seq), idx + 1))
+            for t in range(n_veh):
+                tour = [k for _pos, k in sorted(tours.get(t, []))]
+                arc_nodes = [0] + tour + [0]
+                tour_arcs = {(a, b)
+                             for a, b in zip(arc_nodes, arc_nodes[1:])
+                             if a != b}
+                for i in range(n + 1):
+                    for j in range(n + 1):
+                        if i == j:
+                            continue
+                        pin = 1 if (i, j) in tour_arcs else 0
+                        constraints.append({
+                            'name': f'fix_{t}_{i}_{j}',
+                            'expression': f'x_{t}_{i}_{j} = {pin}'})
+
         metadata = {
             'depot': {'res_id': depot_res_id,
                       'lat': depot_lat, 'lng': depot_lng},
