@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v0.6 — 2026-09-19 (Phase 2 complete: P2.1–P2.8 done, E2E verified live, 24 tests green)
+**Status:** v0.7 — 2026-09-19 (Phase 3 MVP code complete: P3.1–P3.7 done, 30 tests green (24 base + 6 stock) on one fresh DB; P3.8 MVP gate pending a maintainer run)
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -44,6 +44,14 @@ who verifies).
 | P2.6 | Seeded synthetic data generators (`jaot_data.py`, framework-free): toy knapsack (seed 7) for the fast tests and gate, and the routing dataset (seed 42: one depot, four vehicles, 50 orders / 200 lines, partner geo) kept byte-identical to `scripts/spike/vrp_data.py`. Verified: both deterministic; the two routing copies produce identical output | done | 2026-09-19 | e106f49 |
 | P2.7 | Offline test suite (`tests/`, 24 `TransactionCase`s, no network): data determinism, formulation registry + `ToyKnapsack`, per-model constraints / key masking / binding+expression+domain validation, and the full lifecycle via a deterministic `FakeJaotClient` (patched `get_client`). Plain `unittest.TestCase` is not collected by the Odoo loader, so all classes inherit `TransactionCase`. Verified green on a fresh test DB: 0 failed, 0 errors of 24 | done | 2026-09-19 | 125d94a |
 | P2.8 | GATE ⛔: end-to-end on the toy recipe through base alone — **PASSED**. Covered by `test_full_lifecycle` (draft → queued → solved → applied → reverted, with per-line apply/revert audit and record restoration) and run by hand on the live dev DB. Base module is complete with zero domain logic | done | 2026-09-19 | 125d94a |
+| P3.1 | `jaot_stock` bridge: manifest (depends jaot_base+stock+fleet, auto_install [stock,fleet]), extends `stock.picking` with `jaot_vehicle_id`/`jaot_route_sequence`/`jaot_scenario_id`, scenario action + menu under Inventory/Operations, routing fields on the picking form. Installed + verified on a fresh DB (pulls stock+fleet) | done | 2026-09-19 | 57603b0 |
+| P3.2 | VRP recipe + 7 roles + 7 default bindings: depot geo from `stock.warehouse` (partner), order geo + `shipping_weight` from `stock.picking`, fleet from `fleet.vehicle`, constant capacity parameter (no per-vehicle cargo field in Community). Distance: **haversine for v1** (OSRM deferred — a P5+ dependency decision, not a default) | done | 2026-09-19 | 57603b0 |
+| P3.3 | Compact extraction via the base `_extract_snapshot` (stored fields only, company-filtered, snapshot hash for staleness) — the bridge supplies the recipe; extraction is domain-agnostic | done | 2026-09-19 | 57603b0 |
+| P3.4 | Solution mapping: the arc-flow/MTZ variable convention → `jaot.scenario.line`, one line per picking carrying the assigned vehicle + route position. The naming convention (node 0 = depot, nodes 1..n = orders in res_id order) is the contract that keeps apply safe | done | 2026-09-19 | 57603b0 |
+| P3.5 | Scenario UI: list/form/apply/KPI/line-diff already live in `jaot_base`; the bridge exposes the routing fields on the picking form and adds the scenario action under Inventory/Operations. The baseline badge is Phase 4 | done | 2026-09-19 | 57603b0 |
+| P3.6 | Map view: **v1 ships the table view** — no clean Community-friendly map (OCA `web_map`/Leaflet is a P5+ decision; watch AGPL contagion, SPECS §8). The diff view is the product; the map is garnish | done | 2026-09-19 | 57603b0 |
+| P3.7 | E2E test on the routing dataset (offline, fake VRP client): 3 confirmed outgoing pickings + depot warehouse + 1 vehicle → draft → queued → solved → applied (each picking gets the vehicle + route position, a permutation of 1..3) → reverted (fields restored), with per-field apply/revert audit. Baseline/diff assertions land in Phase 4. 2 tests | done | 2026-09-19 | 57603b0 |
+| P3.8 | GATE ⛔ (MVP): the SPECS §11.1 acceptance flow run **by the maintainer** on a fresh Odoo + JAOT, documented with screenshots in `docs/mvp.md`. Blocks Phase 4 | todo | 2026-09-19 | — |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 
