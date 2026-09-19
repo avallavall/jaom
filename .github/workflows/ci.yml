@@ -1,0 +1,127 @@
+# CI (PLAN P5.6, SPECS §6.4 / §10.3 / §10.5):
+#
+#   lint            ruff over the addons (pinned version)
+#   tests           Odoo 19 offline test suite — fake JAOT client, no
+#                   network (SPECS §10.3)
+#   contract-smoke  pinned JAOT v3.9.0: one async solve -> poll -> execution
+#                   -> exact-analysis round-trip, pinning the frozen response
+#                   field names (SPECS §6.4). API drift fails this job —
+#                   a release-blocking event, not a silent workaround.
+#   i18n            the committed .pot templates must match the code
+#                   (SPECS §10.5)
+#
+# The addons are installed on a fresh database each run, exactly the way the
+# dev stack does it (dev/docker-compose.yml, P1.1) — "CI green from a clean
+# checkout" (PLAN P5.7) is this workflow on a clean checkout.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  # Pinned JAOT (SPECS §6.4): v3.9.0. No public image tag exists for JAOT
+  # (it is built from source), so the pin is the commit, built in CI.
+  JAOT_SHA: c5a07e2a0fe9da35bcd69b57b8eda5f33b082d58
+  RUFF_VERSION: 0.15.6
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ruff (pinned)
+        run: pip install ruff==${{ env.RUFF_VERSION }}
+      - name: ruff check
+        run: ruff check .
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the CI stack
+        run: docker compose -f .github/ci.yml up -d db
+      # ``-base:TestCommand``: the core test_cli class spawns
+      # ``odoo-bin <subcommand>`` and resolves the binary path relative to
+      # the test file — a layout that only exists in a source checkout, not
+      # in the Debian-packaged odoo:19.0 image, so the class errors there
+      # 100%-reproducibly (verified locally against the image).
+      # Everything else in base runs.
+      - name: Run the Odoo test suite (offline, fake JAOT client)
+        run: >
+          docker compose -f .github/ci.yml run --rm odoo odoo
+          -d ci --stop-after -i stock,delivery,fleet,jaot_base,jaot_stock
+          --test-enable --test-tags '-base:TestCommand'
+      - name: Teardown
+        if: always()
+        run: docker compose -f .github/ci.yml down -v
+
+  contract-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out pinned JAOT
+        uses: actions/checkout@v4
+        with:
+          repository: avallavall/jaot
+          ref: ${{ env.JAOT_SHA }}
+          path: jaot-pinned
+      - name: Bring up the pinned JAOT stack
+        run: docker compose -f .github/jaot-pinned.yml up -d --build
+      - name: Wait for the API to be healthy
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8001/api/v2/health/status; then
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose -f .github/jaot-pinned.yml logs
+          exit 1
+      - name: Mint an API key (never logged)
+        run: |
+          out="$(docker compose -f .github/jaot-pinned.yml exec -T api \
+            python scripts/ensure_admin_api_key.py)"
+          key="$(printf '%s\n' "$out" | grep -o 'ok_live_[A-Za-z0-9]*' | head -1)"
+          if [ -z "$key" ]; then
+            echo "could not find the minted key in the output"
+            exit 1
+          fi
+          printf '%s' "$key" > "$RUNNER_TEMP/jaot_ci_key"
+      - name: Run the contract smoke test
+        run: |
+          export JAOT_API_KEY="$(cat "$RUNNER_TEMP/jaot_ci_key")"
+          python dev/ci_contract_smoke.py
+      - name: Teardown
+        if: always()
+        run: |
+          docker compose -f .github/jaot-pinned.yml down -v
+          rm -f "$RUNNER_TEMP/jaot_ci_key"
+
+  i18n:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the CI stack
+        run: docker compose -f .github/ci.yml up -d db
+      - name: Install the addons
+        run: >
+          docker compose -f .github/ci.yml run --rm odoo odoo
+          -d i18n --stop-after -i stock,delivery,fleet,jaot_base,jaot_stock
+      - name: Regenerate the .pot templates into the checkout
+        run: |
+          docker compose -f .github/ci.yml run --rm odoo \
+            odoo shell -d i18n --no-http < dev/gen_i18n.py
+      # Content comparison: Odoo re-stamps POT-Creation-Date /
+      # PO-Revision-Date on every export, so the check normalizes those
+      # two header lines and fails on any other difference.
+      - name: The templates must match the code
+        run: python dev/i18n_check.py
+      - name: Teardown
+        if: always()
+        run: docker compose -f .github/ci.yml down -v

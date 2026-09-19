@@ -2,8 +2,8 @@
 # License LGPL-3
 {
     'name': 'JAOT Base',
-    'summary': 'Thin client of a self-hosted JAOT optimization platform: '
-                'recipes, role-based bindings, async solves, scenarios, apply.',
+    'summary': 'Thin client of a self-hosted JAOT platform: recipes, '
+               'role-based bindings, async solves, scenarios, apply.',
     'description': """
 JAOT Base
 =========

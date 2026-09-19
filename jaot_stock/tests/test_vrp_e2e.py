@@ -59,7 +59,7 @@ class TestVrpE2E(TransactionCase):
         return picking
 
     def _dataset(self, n_orders=3):
-        """Depot warehouse (geo), n customer pickings (geo + weight), 1 vehicle."""
+        """Depot (geo), n customer pickings (geo + weight), 1 vehicle."""
         company = self._company()
         warehouse = self.env['stock.warehouse'].search(
             [('company_id', 'in', [company.id, False])],

@@ -1,0 +1,26 @@
+# Lint config (PLAN P5.6).
+#
+# Scope: the addons — that is the code customers install. ``dev/`` and
+# ``scripts/`` are the development harness (odoo-shell snippets, the
+# spike, probes); they run inside an Odoo shell or a scratch context and
+# are deliberately outside the lint scope.
+line-length = 79
+target-version = "py310"
+
+exclude = [
+    "dev",
+    "scripts",
+    "docs",
+    ".git",
+]
+
+[lint]
+select = ["E", "F", "W"]
+# E741: the codebase uses ``l`` as the loop variable for scenario lines
+# throughout (jaot.scenario.line) — an established convention, not typos.
+ignore = ["E741"]
+
+[lint.per-file-ignores]
+# Odoo registers models by side-effect import in __init__.py — the
+# "unused" import is the registration.
+"__init__.py" = ["F401"]

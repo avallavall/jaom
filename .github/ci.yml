@@ -1,0 +1,34 @@
+# CI stack (PLAN P5.6): the P1.1 dev stack (dev/docker-compose.yml) with the
+# host ports dropped — the workflow jobs drive Odoo through
+# ``docker compose run``. Same pinned images the dev stack and the MVP gate
+# use: Odoo 19 Community (odoo:19.0) + PostgreSQL 16.
+#
+# The mount is read-write on purpose: the i18n job regenerates the .pot
+# templates into the checkout (SPECS §10.5) and diffs them against what is
+# committed. The runner's checkout is disposable, so that is safe.
+name: jaom-ci
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_DB: odoo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo -d odoo"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  odoo:
+    image: odoo:19.0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: odoo
+      PGPASSWORD: odoo
+    volumes:
+      - ..:/mnt/extra-addons

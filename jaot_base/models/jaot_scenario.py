@@ -514,7 +514,8 @@ class JaotScenario(models.Model):
         self.solver_name = execution.get('solver_name')
         self.solver_status = solver_status
         self.response_payload = execution
-        self.solve_time_seconds = (execution.get('execution_time_ms') or 0) / 1000
+        self.solve_time_seconds = (
+            (execution.get('execution_time_ms') or 0) / 1000)
         result_data = execution.get('result_data') or {}
         if solver_status == 'infeasible':
             try:
@@ -545,8 +546,8 @@ class JaotScenario(models.Model):
                 'kpi_contribution': line.get('kpi_contribution'),
                 'company_id': self.company_id.id,
             })
-        self.objective_value = (result_data.get('objective_value')
-                                if result_data.get('objective_value') is not None
+        obj = result_data.get('objective_value')
+        self.objective_value = (obj if obj is not None
                                 else execution.get('objective_value'))
         self.gap = result_data.get('gap')
         self.kpi_summary = {

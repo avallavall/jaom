@@ -2,8 +2,8 @@
 # License LGPL-3
 {
     'name': 'JAOT Stock (delivery routing)',
-    'summary': 'Delivery routing (VRP) bridge for JAOT: the VRP recipe, default '
-               'bindings over stock/fleet, compact extraction and apply.',
+    'summary': 'Delivery routing (VRP) bridge for JAOT: the VRP recipe, '
+               'default bindings over stock/fleet, extraction and apply.',
     'description': """
 JAOT Stock — delivery routing bridge
 =====================================

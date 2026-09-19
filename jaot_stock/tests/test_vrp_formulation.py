@@ -122,6 +122,7 @@ class TestVrpFormulation(TransactionCase):
         # no arc pinned to 1 points into node 3, so visit_3 is unsatisfiable
         visited = set()
         for c in problem['constraints']:
-            if c['name'].startswith('fix_') and c['expression'].endswith('= 1'):
+            if (c['name'].startswith('fix_')
+                    and c['expression'].endswith('= 1')):
                 visited.add(int(c['expression'].split(' = ')[0].split('_')[3]))
         self.assertNotIn(3, visited)

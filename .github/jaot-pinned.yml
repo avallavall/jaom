@@ -1,0 +1,111 @@
+# Pinned JAOT stack for the CI contract smoke test (SPECS §6.4, PLAN P5.6).
+#
+# JAOT has no published image tag (the jaot repo builds locally and does not
+# push to a registry), so "pinned" means: the jaot repo at the exact commit
+# declared in the workflow (v3.9.0, c5a07e2), checked out next to this file
+# (../jaot-pinned), built with the Dockerfiles pinned in that checkout. The
+# infrastructure images carry the same digests the jaot dev compose pins.
+#
+# Trimmed versus the jaot dev stack: no qdrant (QDRANT_URL empty disables
+# RAG — not needed to solve), no frontend, no comparison worker, no beat.
+# DEBUG=True (dev mode): JWT auto-generated, the API migrates + seeds the
+# bootstrap admin on first boot (jaot README "Quick start").
+name: jaom-jaot
+
+services:
+  postgres:
+    image: postgres:18-alpine@sha256:035b9ab53cfa147d7202b61f5f7782b939ae815b7d6bc81c96b7b42ff1fca950
+    environment:
+      POSTGRES_USER: jaot
+      POSTGRES_PASSWORD: jaot
+      POSTGRES_DB: jaot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jaot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281
+    environment:
+      RABBITMQ_DEFAULT_USER: jaot
+      RABBITMQ_DEFAULT_PASS: jaot
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ../jaot-pinned
+      dockerfile: deploy/docker/Dockerfile
+    ports:
+      - "127.0.0.1:8001:8001"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - WORKERS=1
+      - RELOAD=False
+      - DEBUG=True
+      - DATABASE_URL=postgresql://jaot:jaot@postgres:5432/jaot
+      - CELERY_BROKER_URL=amqp://jaot:jaot@rabbitmq:5672//
+      - REDIS_URL=redis://redis:6379/0
+      # RAG disabled: the smoke test never touches the LLM surface.
+      - QDRANT_URL=
+      - SEED_ADMIN_EMAIL=admin@jaom-ci.invalid
+      - SEED_ADMIN_PASSWORD=JaomCI-NotARealKey-1!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/api/v2/health/status')"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+
+  celery:
+    build:
+      context: ../jaot-pinned
+      dockerfile: deploy/docker/Dockerfile.worker
+    command: ["celery", "-A", "app.shared.core.celery_app", "worker",
+              "--loglevel=info", "--concurrency=2",
+              "-Q", "jaot_default,solve_scip,solve_highs,solve_cbc,solve_glpk"]
+    environment:
+      - DATABASE_URL=postgresql://jaot:jaot@postgres:5432/jaot
+      - CELERY_BROKER_URL=amqp://jaot:jaot@rabbitmq:5672//
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.shared.core.celery_app",
+             "inspect", "ping", "--timeout", "5"]
+      interval: 15s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m
