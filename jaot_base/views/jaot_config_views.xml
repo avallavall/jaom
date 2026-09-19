@@ -11,11 +11,10 @@
         </field>
     </record>
 
-    <menuitem id="menu_jaot_config_connection"
-              name="Connections"
-              parent="menu_jaot_config"
-              action="action_jaot_config"
-              sequence="10"/>
+    <!-- The "Configuration" menu lives in jaot_menus.xml and already points
+         at action_jaot_config; defining it here would create a load-order
+         cycle (the menu needs this action, this action file needs the
+         menu). -->
 
     <record id="view_jaot_config_form" model="ir.ui.view">
         <field name="name">jaot.config.form</field>
