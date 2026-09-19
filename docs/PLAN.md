@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v0.3 — 2026-09-11 (Phase 0 complete; P1.1 done)
+**Status:** v0.4 — 2026-09-19 (Phase 1 complete: P1.1–P1.5 done)
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -34,6 +34,8 @@ who verifies).
 | P1.1 | A-odoo-terrain: Odoo 19 verification at doc/source level + live stand-up (dev compose `odoo:19.0` + `postgres:16`; metamodel smoke ALL PASS; auto_install verified live with a probe, then removed) — full 19.0 docs link index in `docs/rag_odoo19.md`; live evidence in the note §9 | done | 2026-09-11 | fdf3ada |
 | P1.2 | B-roles gate: hand-mapped the VRP recipe's nine roles vs standard Odoo 19 Community (live metamodel) and one OCA module in the same domain (`partner_delivery_schedule`, OCA/delivery-carrier 19.0 @ `543a240`, installed → binding simulated → uninstalled/removed). **Gate passed: D3 holds** — every required role binds to a standard source; vehicle capacity + distance matrix are parameter/config bindings; the OCA case moves exactly one binding with zero code change. Findings F1–F3 feed P2.3/P3.2. Live evidence + evidence log in the note §2–§6 | done | 2026-09-11 | ecd014a |
 | P1.3 | C-jaot-contract: SPECS §6 verified **live end-to-end** on JAOT v3.9.0 (`c5a07e2`) with real calls — all 10 steps pass (`dev/jaot_contract_probe.py`, key via env); live OpenAPI spec (3.9.0) fetched from `GET /openapi.json` (committed file is a stale 3.8.0); exact response field names frozen in note §4 (feeds P2.2 + the §6.4 CI smoke test); three deltas corrected in SPECS §6.2 (D1 preview is POST, D2 scenario-analysis bodyless, D3 infeasibility via execution `solver_status`); SPECS §4.7 answered: the formulation assistant takes external context via its per-conversation attachment channel (verified live to the LLM call; final mile blocked by platform billing) | done | 2026-09-11 | 37a942b |
+| P1.4 | D-spike: standalone script (`scripts/spike/`, stdlib only) runs the full flow live — seed the P2.6 generator dataset into the dev Odoo DB over XML-RPC, extract it through the P1.2 binding set (incl. the F2 path resolver), build the arc-flow + MTZ `OptimizationProblem`, submit to JAOT async, poll, print the solution, and compare against the SPECS 4.6 fix-all baseline (delta 0.000000, exit 0). Live run: 10 400 vars / 10 062 cons, SCIP 600 s at gap 0.60 %, 4 tours within capacity. Findings F4–F9 (computed move weight, computed vehicle name, fleet brand model, weight-digit drift, IIS-caught sign bug, scale numbers) | done | 2026-09-19 | 1477685 |
+| P1.5 | GATE ⛔: the spike works end-to-end with real data and real JAOT — **PASSED** on the P1.4 live run; the only infeasibility seen was the spike's own formulation bug, surfaced correctly by JAOT's IIS endpoint (D-spike §6). No API or role-mapping failure; P2 may proceed | done | 2026-09-19 | 1477685 |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 
