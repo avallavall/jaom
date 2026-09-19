@@ -108,3 +108,96 @@ def generate_routing(seed=ROUTING_SEED, n_orders=ROUTING_N_ORDERS,
         "orders": orders,
         "total_demand_kg": total,
     }
+
+
+# P5.1 / P5.3: realistic and stress datasets. These are additive — the
+# seed-42 routing set above stays byte-frozen for the P1.4 spike.
+
+def generate_routing_multi(seed=43, n_companies=2, orders_per_company=20,
+                           depots_per_company=1, tight=True,
+                           lines_per_order=4):
+    """Multi-company, multi-depot routing dataset with an optional tight
+    fleet (P5.1). Returns ``{'companies': [{'company','depots','vehicles',
+    'orders','total_demand_kg'}]}`` as plain dicts, deterministic per seed.
+
+    With ``tight`` the fleet capacity is scaled to ~95% of each company's
+    demand, so the instance is feasible but close to the limit (the case the
+    gate and P5.3 want to stress). Each company is geo-separated so a
+    cross-company leak is detectable in the security tests (P5.2).
+    """
+    rng = random.Random(seed)
+    companies = []
+    for c in range(n_companies):
+        lat0 = _ROUTING_REF_LAT + c * 2.0
+        lon0 = _ROUTING_REF_LON + c * 2.0
+        depots = [{
+            "name": f"C{c}D{d}",
+            "lat": round(lat0 + rng.uniform(-0.5, 0.5), 6),
+            "lon": round(lon0 + rng.uniform(-0.5, 0.5), 6),
+        } for d in range(depots_per_company)]
+        orders = []
+        for i in range(1, orders_per_company + 1):
+            lat, lon = (lat0 + rng.uniform(-0.5, 0.5),
+                        lon0 + rng.uniform(-0.5, 0.5))
+            demand = round(rng.uniform(40.0, 160.0), 1)
+            lines = [{
+                "name": f"Line {i}-{j}",
+                "qty": float(rng.randint(1, 5)),
+                "weight_kg": round(demand / lines_per_order
+                                   * rng.uniform(0.7, 1.3), 1),
+            } for j in range(1, lines_per_order + 1)]
+            demand = round(sum(l["weight_kg"] for l in lines), 1)
+            orders.append({
+                "name": f"MC{c}-{i:03d}",
+                "partner_name": f"MC Customer {c}-{i:03d}",
+                "lat": round(lat, 6),
+                "lon": round(lon, 6),
+                "demand_kg": demand,
+                "lines": lines,
+            })
+        total = sum(o["demand_kg"] for o in orders)
+        n_vehicles = max(2, int(round(total / 1600.0)) + (0 if tight else 1))
+        if tight:
+            per_vehicle = max(1.0, round(total * 0.95 / n_vehicles, 1))
+            vehicles = [{"name": f"C{c}V{k}", "capacity_kg": per_vehicle}
+                        for k in range(n_vehicles)]
+        else:
+            vehicles = [{"name": f"C{c}V{k}", "capacity_kg": 1600.0}
+                        for k in range(n_vehicles)]
+        companies.append({
+            "company": f"Company {c + 1}",
+            "depots": depots,
+            "vehicles": vehicles,
+            "orders": orders,
+            "total_demand_kg": total,
+        })
+    return {"companies": companies}
+
+
+def generate_routing_stress(seed=44, n_orders=50000, lines_per_order=4):
+    """Large single-company dataset (default 50 k orders) for the P5.3
+    extraction benchmark. Plain dicts, deterministic per seed."""
+    rng = random.Random(seed)
+    depot = {"name": "Stress Depot",
+             "lat": _ROUTING_REF_LAT, "lon": _ROUTING_REF_LON}
+    orders = []
+    for i in range(1, n_orders + 1):
+        lat, lon = _routing_geo(rng)
+        demand = round(rng.uniform(40.0, 160.0), 1)
+        lines = [{
+            "name": f"Line {i}-{j}",
+            "qty": float(rng.randint(1, 5)),
+            "weight_kg": round(demand / lines_per_order
+                               * rng.uniform(0.7, 1.3), 1),
+        } for j in range(1, lines_per_order + 1)]
+        demand = round(sum(l["weight_kg"] for l in lines), 1)
+        orders.append({
+            "name": f"STR-{i:05d}",
+            "partner_name": f"Stress Customer {i:05d}",
+            "lat": round(lat, 6),
+            "lon": round(lon, 6),
+            "demand_kg": demand,
+            "lines": lines,
+        })
+    total = sum(o["demand_kg"] for o in orders)
+    return {"depot": depot, "orders": orders, "total_demand_kg": total}
