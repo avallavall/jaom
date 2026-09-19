@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v0.8 — 2026-09-19 (Phase 3 complete and the P3.8 MVP gate run end to end incl. the baseline delta; Phase 4: P4.1 baseline fix-all, P4.2 KPI delta, P4.4 staleness done, P4.6 comparison gate run; P4.3 what-if and P4.5 upstream issue pending)
+**Status:** v0.9 — 2026-09-19 (Phase 3 complete and the P3.8 MVP gate run end to end incl. the baseline delta; Phase 4 complete: P4.1 baseline fix-all, P4.2 KPI delta, P4.3 what-if, P4.4 staleness, P4.6 comparison gate run; only P4.5 remains — file the upstream JAOT issue, external to this repo)
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -51,13 +51,13 @@ who verifies).
 | P3.5 | Scenario UI: list/form/apply/KPI/line-diff already live in `jaot_base`; the bridge exposes the routing fields on the picking form and adds the scenario action under Inventory/Operations. The baseline badge is Phase 4 | done | 2026-09-19 | 57603b0 |
 | P3.6 | Map view: **v1 ships the table view** — no clean Community-friendly map (OCA `web_map`/Leaflet is a P5+ decision; watch AGPL contagion, SPECS §8). The diff view is the product; the map is garnish | done | 2026-09-19 | 57603b0 |
 | P3.7 | E2E test on the routing dataset (offline, fake VRP client): 3 confirmed outgoing pickings + depot warehouse + 1 vehicle → draft → queued → solved → applied (each picking gets the vehicle + route position, a permutation of 1..3) → reverted (fields restored), with per-field apply/revert audit. Baseline/diff assertions land in Phase 4. 2 tests | done | 2026-09-19 | 57603b0 |
-| P3.8 | GATE ⛔ (MVP): the SPECS §11.1 acceptance flow run end to end (configure → draft → solve → decision lines → **diff vs baseline** → apply → audit → revert → staleness) on the dev stack (Odoo 19 + live JAOT), documented with screenshots in `docs/mvp.md`. The §11.1 scope question is resolved (reading b): the gate includes the baseline delta. Solved objective 47.62 vs baseline 55.99 (delta 8.36); apply/revert round-trip verified against the incumbent plan | done | 2026-09-19 | — |
+| P3.8 | GATE ⛔ (MVP): the SPECS §11.1 acceptance flow run end to end (configure → draft → solve → decision lines → **diff vs baseline** → apply → audit → revert → staleness) on the dev stack (Odoo 19 + live JAOT), documented with screenshots in `docs/mvp.md`. The §11.1 scope question is resolved (reading b): the gate includes the baseline delta. Solved objective 47.62 vs baseline 55.99 (delta 8.36); apply/revert round-trip verified against the incumbent plan | done | 2026-09-19 | 268f2c9 |
 | P4.1 | Baseline capture wired into every routing solve: the VRP formulation's `is_baseline` path pins vehicle + position + selected to the incumbent plan, so the objective equals the incumbent cost and `map_solution` returns the fixed plan (SPECS §4.6). 33 tests green | done | 2026-09-19 | f5c14f0 |
 | P4.2 | KPI delta view: a **Compare with baseline** action re-solves the recipe as the baseline and stores `objective_value`, `baseline_objective`, `optimized_objective` and `delta_vs_baseline` on the scenario (KPI summary + per-line delta) | done | 2026-09-19 | 9ccd3b3 |
-| P4.3 | Guided what-if: expose JAOT `scenario-analysis` on a solved scenario. Depends on the JAOT scenario-analysis contract (SPECS §6); not required for the gate | todo | 2026-09-19 | — |
+| P4.3 | Guided what-if: a **What-if analysis** action POSTs the bodyless `scenario-analysis` batch on a solved scenario; the reconcile cron polls it out of band and stores the RHS relax/tighten and decision-flip rows on `jaot.scenario.whatif` (budget-truncated rows kept as `SKIPPED_BUDGET` bounds). Verified live: 20 rows, infeasible perturbations flagged, forced-incumbent regret 8.36 (= baseline delta). 3 tests | done | 2026-09-19 | 95faefe |
 | P4.4 | Staleness: snapshot-hash check on reconciliation + a **Check staleness** action and a warning banner on the scenario form (SPECS §4.6) | done | 2026-09-19 | 735c157 |
 | P4.5 | Upstream: file the JAOT issue for a native evaluate-only / what-if endpoint. External (maintainer's GitHub account) | todo | 2026-09-19 | — |
-| P4.6 | GATE ⛔: the comparison flow tested end to end, including the baseline delta — run on the dev stack (Odoo 19 + live JAOT), evidence in `docs/mvp.md`. Optimized 47.62 vs baseline 55.99 (delta 8.36); apply/revert round-trip verified | done | 2026-09-19 | — |
+| P4.6 | GATE ⛔: the comparison flow tested end to end, including the baseline delta — run on the dev stack (Odoo 19 + live JAOT), evidence in `docs/mvp.md`. Optimized 47.62 vs baseline 55.99 (delta 8.36); apply/revert round-trip verified | done | 2026-09-19 | 268f2c9 |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 
