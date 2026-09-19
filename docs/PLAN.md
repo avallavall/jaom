@@ -51,7 +51,7 @@ who verifies).
 | P3.5 | Scenario UI: list/form/apply/KPI/line-diff already live in `jaot_base`; the bridge exposes the routing fields on the picking form and adds the scenario action under Inventory/Operations. The baseline badge is Phase 4 | done | 2026-09-19 | 57603b0 |
 | P3.6 | Map view: **v1 ships the table view** — no clean Community-friendly map (OCA `web_map`/Leaflet is a P5+ decision; watch AGPL contagion, SPECS §8). The diff view is the product; the map is garnish | done | 2026-09-19 | 57603b0 |
 | P3.7 | E2E test on the routing dataset (offline, fake VRP client): 3 confirmed outgoing pickings + depot warehouse + 1 vehicle → draft → queued → solved → applied (each picking gets the vehicle + route position, a permutation of 1..3) → reverted (fields restored), with per-field apply/revert audit. Baseline/diff assertions land in Phase 4. 2 tests | done | 2026-09-19 | 57603b0 |
-| P3.8 | GATE ⛔ (MVP): the SPECS §11.1 acceptance flow run **by the maintainer** on a fresh Odoo + JAOT, documented with screenshots in `docs/mvp.md`. Blocks Phase 4 | todo | 2026-09-19 | — |
+| P3.8 | GATE ⛔ (MVP): the SPECS §11.1 acceptance flow run **by the maintainer** on a fresh Odoo + JAOT, documented with screenshots in `docs/mvp.md`. Runbook written (core flow: configure → seed → solve → lines → apply → audit → revert). **Open scope question for the maintainer:** §11.1 step 1 mentions "diff vs baseline," but baseline capture is Phase 4 (P4.1/P4.2) — confirm the gate is the core flow (reading a) or requires the baseline delta (reading b). Blocks Phase 4 | blocked(maintainer) | 2026-09-19 | — |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 
