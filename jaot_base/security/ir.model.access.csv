@@ -1,1 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_jaot_config_system,jaot.config.system,model_jaot_config,base.group_system,1,1,1,1
+access_jaot_config_user,jaot.config.user,model_jaot_config,jaot_base.group_user,1,0,0,0
+access_jaot_config_manager,jaot.config.manager,model_jaot_config,jaot_base.group_manager,1,1,1,1

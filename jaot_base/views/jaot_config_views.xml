@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_jaot_config" model="ir.actions.act_window">
+        <field name="name">Connections</field>
+        <field name="res_model">jaot.config</field>
+        <field name="view_mode">form,list</field>
+        <field name="help" type="html">
+            <p class="o_view_no_content_smallest">
+                Create a connection to your self-hosted JAOT instance.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_jaot_config_connection"
+              name="Connections"
+              parent="menu_jaot_config"
+              action="action_jaot_config"
+              sequence="10"/>
+
+    <record id="view_jaot_config_form" model="ir.ui.view">
+        <field name="name">jaot.config.form</field>
+        <field name="model">jaot.config</field>
+        <field name="arch" type="xml">
+            <form string="JAOT Connection">
+                <header>
+                    <button name="action_test_connection"
+                            type="object"
+                            class="oe_highlight"
+                            string="Test connection"/>
+                    <button name="action_clear_api_key"
+                            type="object"
+                            string="Remove key"
+                            groups="jaot_base.group_manager"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Connection">
+                            <field name="company_id"/>
+                            <field name="endpoint_url"/>
+                            <field name="api_key_set"/>
+                            <field name="api_key_masked"/>
+                            <field name="api_key_input"
+                                   password="True"
+                                   groups="jaot_base.group_manager"/>
+                        </group>
+                        <group string="Solve behaviour">
+                            <field name="poll_interval"/>
+                            <field name="solve_time_limit"/>
+                            <field name="gap_tolerance"/>
+                            <field name="default_solver"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Odoo 19: the list view type is <list>, not <tree> (verified live). -->
+    <record id="view_jaot_config_list" model="ir.ui.view">
+        <field name="name">jaot.config.list</field>
+        <field name="model">jaot.config</field>
+        <field name="arch" type="xml">
+            <list string="JAOT Connections">
+                <field name="company_id"/>
+                <field name="endpoint_url"/>
+                <field name="api_key_set"/>
+                <field name="poll_interval"/>
+                <field name="solve_time_limit"/>
+                <field name="default_solver"/>
+            </list>
+        </field>
+    </record>
+</odoo>
