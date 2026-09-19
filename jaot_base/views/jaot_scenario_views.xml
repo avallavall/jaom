@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_jaot_scenario_form" model="ir.ui.view">
+        <field name="name">jaot.scenario.form</field>
+        <field name="model">jaot.scenario</field>
+        <field name="arch" type="xml">
+            <form string="JAOT Scenario">
+                <header>
+                    <button name="action_submit" type="object" string="Solve"
+                            class="btn-primary"
+                            invisible="state != 'draft'"
+                            groups="jaot_base.group_manager"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            class="btn-secondary"
+                            invisible="state not in ('queued','solving')"
+                            groups="jaot_base.group_manager"/>
+                    <button name="action_apply" type="object" string="Apply"
+                            class="btn-primary"
+                            invisible="state != 'solved'"
+                            groups="jaot_base.group_manager"/>
+                    <button name="action_revert" type="object" string="Revert"
+                            class="btn-secondary"
+                            invisible="state != 'applied'"
+                            groups="jaot_base.group_manager"/>
+                    <button name="action_check_staleness" type="object"
+                            string="Check staleness" class="btn-link"
+                            invisible="state not in ('solved','applied')"
+                            groups="jaot_base.group_manager"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not data_stale">
+                        Solved against stale data: the underlying Odoo
+                        records changed after extraction.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="recipe_id"/>
+                            <field name="state"/>
+                            <field name="solver_name"/>
+                            <field name="solver_status"/>
+                        </group>
+                        <group>
+                            <field name="company_id"
+                                  groups="base.group_multi_company"/>
+                            <field name="objective_value"/>
+                            <field name="objective_sense"/>
+                            <field name="gap"/>
+                            <field name="solve_time_seconds"/>
+                            <field name="line_count"/>
+                            <field name="applied"/>
+                            <field name="applied_at"/>
+                            <field name="applied_by"
+                                  invisible="not applied"/>
+                        </group>
+                    </group>
+                    <group string="JAOT identifiers" groups="base.group_system">
+                        <field name="jaot_task_id"/>
+                        <field name="jaot_execution_id"/>
+                        <field name="data_snapshot_hash"/>
+                    </group>
+                    <notebook>
+                        <page string="Lines" name="lines">
+                            <field name="scenario_line_ids" nolabel="1">
+                                <list>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="res_model"/>
+                                    <field name="res_id"/>
+                                    <field name="decision"/>
+                                    <field name="kpi_contribution"/>
+                                    <field name="delta_vs_baseline"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Error / infeasibility" name="error"
+                              invisible="state != 'failed' and not infeasibility">
+                            <field name="jaot_error" nolabel="1"/>
+                            <field name="infeasibility" nolabel="1"/>
+                        </page>
+                        <page string="KPI summary" name="kpi">
+                            <field name="kpi_summary" nolabel="1"/>
+                        </page>
+                        <page string="Payloads" name="payloads"
+                              groups="base.group_system">
+                            <field name="request_payload" nolabel="1"/>
+                            <field name="response_payload" nolabel="1"/>
+                            <field name="binding_snapshot" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_jaot_scenario_list" model="ir.ui.view">
+        <field name="name">jaot.scenario.list</field>
+        <field name="model">jaot.scenario</field>
+        <field name="arch" type="xml">
+            <list string="JAOT Scenarios">
+                <field name="name"/>
+                <field name="recipe_id"/>
+                <field name="state"/>
+                <field name="objective_value"/>
+                <field name="gap"/>
+                <field name="line_count"/>
+                <field name="applied"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_jaot_scenario" model="ir.actions.act_window">
+        <field name="name">Scenarios</field>
+        <field name="res_model">jaot.scenario</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

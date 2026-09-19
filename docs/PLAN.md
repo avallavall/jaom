@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v0.4 — 2026-09-19 (Phase 1 complete: P1.1–P1.5 done)
+**Status:** v0.5 — 2026-09-19 (Phase 2: P2.1–P2.5 done, E2E verified live)
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -38,7 +38,9 @@ who verifies).
 | P1.5 | GATE ⛔: the spike works end-to-end with real data and real JAOT — **PASSED** on the P1.4 live run; the only infeasibility seen was the spike's own formulation bug, surfaced correctly by JAOT's IIS endpoint (D-spike §6). No API or role-mapping failure; P2 may proceed | done | 2026-09-19 | 1477685 |
 | P2.1 | Module skeleton `jaot_base`: manifest (LGPL-3, depends `base`+`mail`, application), security groups (`jaot_base.group_user` read-only / `group_manager` full), ACL CSV, company rule, root + Configuration menus (Odoo 19: `ir.ui.menu.group_ids`, no `res.groups.category_id`). Installed + verified live | done | 2026-09-19 | 42a4a5f |
 | P2.2 | `jaot.config` (per-company: endpoint, masked key in `ir.config_parameter`, poll interval, time limit, gap tolerance) + framework-free `jaot_client.py` against the C-jaot-contract §4 frozen names, with a `transport` seam for tests. Verified live: config + key saved via form fields, `action_test_connection` hit real JAOT 3.9.0 and returned health + solvers notification. Odoo 19: `tree` view type renamed `list` | done | 2026-09-19 | b47749c |
-| P2.3 | `jaot.recipe` + `jaot.recipe.role` + `jaot.binding` (per-role, per-company), restricted `safe_eval` expression guard (`jaot_expr.py`, closed namespace, every evaluation logged), expression field gated to `base.group_system`. Odoo 19: `_sql_constraints` removed in favor of `models.Constraint` (verified live — old attr silently ignored). Verified: bad expression/domain rejected at write, dangerous expr blocked at eval, one-binding-per-role-per-company, group gating | done | 2026-09-19 | pending |
+| P2.3 | `jaot.recipe` + `jaot.recipe.role` + `jaot.binding` (per-role, per-company), restricted `safe_eval` expression guard (`jaot_expr.py`, closed namespace, every evaluation logged), expression field gated to `base.group_system`. Odoo 19: `_sql_constraints` removed in favor of `models.Constraint` (verified live — old attr silently ignored). Verified: bad expression/domain rejected at write, dangerous expr blocked at eval, one-binding-per-role-per-company, group gating | done | 2026-09-19 | c5b29f0 |
+| P2.4 | `jaot.scenario` + `jaot.scenario.line` + the lifecycle (SPECS §4.4: draft→queued→solving→solved, plus failed/cancelled) with `mail.thread` audit, idempotent `ir.cron` reconciliation keyed by `jaot_task_id` (worker-restart safe, never re-submits a known task), cancel, and orphan-timeout backstop. Formulation registry (`jaot_formulations.py`) maps recipe code → framework-free formulation (toy knapsack for the base module). Odoo 19: `ir.cron` uses `_inherits` of `ir.actions.server`, no `numbercall`/`doall`, minimum interval is 1 minute (the 10 s spec target is unachievable on a cron — documented). Verified live: submit → reconcile → solved | done | 2026-09-19 | · |
+| P2.5 | Apply engine (SPECS §4.5): per-line decision writes in per-record savepoints, before/after diff captured in `jaot.apply.log` (values reduced to JSON-safe form), revert re-applies the logged before-state through the same machinery. Verified live end-to-end on the toy recipe: draft → queued → solved (obj 220, optimal) → applied (records written) → reverted (records restored), audit log rows present | done | 2026-09-19 | · |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 

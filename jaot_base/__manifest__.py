@@ -3,7 +3,7 @@
 {
     'name': 'JAOT Base',
     'summary': 'Thin client of a self-hosted JAOT optimization platform: '
-               'recipes, role-based bindings, async solves, scenarios, apply.',
+                'recipes, role-based bindings, async solves, scenarios, apply.',
     'description': """
 JAOT Base
 =========
@@ -25,9 +25,12 @@ No solver runs inside Odoo. No write happens without confirmation.
         'security/jaot_security.xml',
         'security/ir.model.access.csv',
         'security/jaot_rules.xml',
-        'views/jaot_menus.xml',
+        'data/jaot_cron.xml',
         'views/jaot_recipe_views.xml',
         'views/jaot_config_views.xml',
+        'views/jaot_scenario_views.xml',
+        'views/jaot_apply_log_views.xml',
+        'views/jaot_menus.xml',
     ],
     'application': True,
     'installable': True,

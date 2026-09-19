@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 from ..jaot_expr import validate_domain, validate_expression
@@ -100,8 +100,10 @@ class JaotBinding(models.Model):
     role_id = fields.Many2one(
         'jaot.recipe.role', required=True, ondelete='cascade')
     res_model = fields.Char(
-        string='Source model', required=True,
-        help='Odoo model the role is extracted from, e.g. stock.picking.')
+        string='Source model',
+        help='Odoo model the role is extracted from, e.g. stock.picking. '
+             'Required for variable/constraint roles; omitted for parameter '
+             'roles (which carry a constant_value).')
     field_path = fields.Char(
         help='Dotted path to the value, e.g. production_id.date_deadline.')
     domain = fields.Char(
@@ -111,6 +113,11 @@ class JaotBinding(models.Model):
         help='Optional restricted expression evaluated over the record '
              'values. Only a closed namespace is available (SPECS 5.4). '
              'Visible to administrators only.')
+    constant_value = fields.Char(
+        string='Constant value',
+        help='For parameter roles: a literal number (no Odoo source). '
+             'Ignored for variable/constraint roles, which use '
+             'res_model + field_path.')
     company_id = fields.Many2one(
         'res.company', required=True, default=lambda self: self.env.company)
 
@@ -136,7 +143,36 @@ class JaotBinding(models.Model):
         return super().write(vals)
 
     def _validate(self, vals):
-        if 'expression' in vals:
+        if vals.get('expression'):
             validate_expression(vals['expression'])
-        if 'domain' in vals:
+        if vals.get('domain'):
             validate_domain(vals['domain'])
+        self._validate_source(vals)
+
+    def _validate_source(self, vals):
+        """A parameter role carries a constant_value; every other role
+        needs a source model (field_path is optional for pure reference
+        roles that only define the record set)."""
+        role_id = vals.get('role_id')
+        if role_id is not None:
+            role = self.env['jaot.recipe.role'].browse(int(role_id)).exists()
+        else:
+            role = self.role_id
+        if not role:
+            return
+        if role.kind == 'parameter':
+            const = vals.get('constant_value')
+            if const is None and self and self.id:
+                const = self.constant_value
+            if not const:
+                raise UserError(_(
+                    "Parameter role '%(r)s' needs a constant value.",
+                    r=role.name))
+        else:
+            res_model = vals.get('res_model')
+            if res_model is None and self and self.id:
+                res_model = self.res_model
+            if not res_model:
+                raise UserError(_(
+                    "Role '%(r)s' needs a source model (res_model).",
+                    r=role.name))

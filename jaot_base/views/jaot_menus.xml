@@ -13,21 +13,45 @@
         <field name="group_ids" eval="[(4, ref('jaot_base.group_user'))]"/>
     </record>
 
+    <record id="menu_jaot_config" model="ir.ui.menu">
+        <field name="name">Configuration</field>
+        <field name="parent_id" ref="menu_jaot_root"/>
+        <field name="sequence">10</field>
+        <field name="action" ref="action_jaot_config"/>
+    </record>
+
     <record id="menu_jaot_recipe" model="ir.ui.menu">
         <field name="name">Recipes</field>
         <field name="parent_id" ref="menu_jaot_root"/>
         <field name="sequence">20</field>
+        <field name="action" ref="action_jaot_recipe"/>
     </record>
 
     <record id="menu_jaot_binding" model="ir.ui.menu">
         <field name="name">Bindings</field>
         <field name="parent_id" ref="menu_jaot_root"/>
         <field name="sequence">30</field>
+        <field name="action" ref="action_jaot_binding"/>
     </record>
 
-    <record id="menu_jaot_config" model="ir.ui.menu">
-        <field name="name">Configuration</field>
+    <record id="menu_jaot_scenario" model="ir.ui.menu">
+        <field name="name">Scenarios</field>
         <field name="parent_id" ref="menu_jaot_root"/>
-        <field name="sequence">10</field>
+        <field name="sequence">40</field>
+        <field name="action" ref="action_jaot_scenario"/>
+    </record>
+
+    <record id="menu_jaot_apply_log" model="ir.ui.menu">
+        <field name="name">Apply Log</field>
+        <field name="parent_id" ref="menu_jaot_root"/>
+        <field name="sequence">50</field>
+        <field name="action" ref="action_jaot_apply_log"/>
+    </record>
+
+    <record id="menu_jaot_demo_item" model="ir.ui.menu">
+        <field name="name">Toy Items</field>
+        <field name="parent_id" ref="menu_jaot_root"/>
+        <field name="sequence">60</field>
+        <field name="action" ref="action_jaot_demo_item"/>
     </record>
 </odoo>

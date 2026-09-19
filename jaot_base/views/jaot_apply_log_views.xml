@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_jaot_apply_log_list" model="ir.ui.view">
+        <field name="name">jaot.apply.log.list</field>
+        <field name="model">jaot.apply.log</field>
+        <field name="arch" type="xml">
+            <list string="JAOT Apply Log">
+                <field name="scenario_id"/>
+                <field name="sequence"/>
+                <field name="res_model"/>
+                <field name="res_id"/>
+                <field name="field_path"/>
+                <field name="before_value"/>
+                <field name="after_value"/>
+                <field name="state"/>
+                <field name="applied_at"/>
+                <field name="reverted_at"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_jaot_apply_log_form" model="ir.ui.view">
+        <field name="name">jaot.apply.log.form</field>
+        <field name="model">jaot.apply.log</field>
+        <field name="arch" type="xml">
+            <form string="JAOT Apply Log">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="scenario_id"/>
+                            <field name="res_model"/>
+                            <field name="res_id"/>
+                            <field name="field_path"/>
+                        </group>
+                        <group>
+                            <field name="state"/>
+                            <field name="before_value"/>
+                            <field name="after_value"/>
+                            <field name="applied_at"/>
+                            <field name="reverted_at"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_jaot_apply_log" model="ir.actions.act_window">
+        <field name="name">Apply Log</field>
+        <field name="res_model">jaot.apply.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_jaot_demo_item_list" model="ir.ui.view">
+        <field name="name">jaot.demo.item.list</field>
+        <field name="model">jaot.demo.item</field>
+        <field name="arch" type="xml">
+            <list string="JAOT Toy Items" editable="bottom">
+                <field name="name"/>
+                <field name="weight"/>
+                <field name="value"/>
+                <field name="selected"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_jaot_demo_item_form" model="ir.ui.view">
+        <field name="name">jaot.demo.item.form</field>
+        <field name="model">jaot.demo.item</field>
+        <field name="arch" type="xml">
+            <form string="JAOT Toy Item">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="weight"/>
+                        <field name="value"/>
+                        <field name="selected"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_jaot_demo_item" model="ir.actions.act_window">
+        <field name="name">Toy Items</field>
+        <field name="res_model">jaot.demo.item</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
