@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v0.5 — 2026-09-19 (Phase 2: P2.1–P2.5 done, E2E verified live)
+**Status:** v0.6 — 2026-09-19 (Phase 2 complete: P2.1–P2.8 done, E2E verified live, 24 tests green)
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -41,6 +41,9 @@ who verifies).
 | P2.3 | `jaot.recipe` + `jaot.recipe.role` + `jaot.binding` (per-role, per-company), restricted `safe_eval` expression guard (`jaot_expr.py`, closed namespace, every evaluation logged), expression field gated to `base.group_system`. Odoo 19: `_sql_constraints` removed in favor of `models.Constraint` (verified live — old attr silently ignored). Verified: bad expression/domain rejected at write, dangerous expr blocked at eval, one-binding-per-role-per-company, group gating | done | 2026-09-19 | c5b29f0 |
 | P2.4 | `jaot.scenario` + `jaot.scenario.line` + the lifecycle (SPECS §4.4: draft→queued→solving→solved, plus failed/cancelled) with `mail.thread` audit, idempotent `ir.cron` reconciliation keyed by `jaot_task_id` (worker-restart safe, never re-submits a known task), cancel, and orphan-timeout backstop. Formulation registry (`jaot_formulations.py`) maps recipe code → framework-free formulation (toy knapsack for the base module). Odoo 19: `ir.cron` uses `_inherits` of `ir.actions.server`, no `numbercall`/`doall`, minimum interval is 1 minute (the 10 s spec target is unachievable on a cron — documented). Verified live: submit → reconcile → solved | done | 2026-09-19 | 6d7e6a0 |
 | P2.5 | Apply engine (SPECS §4.5): per-line decision writes in per-record savepoints, before/after diff captured in `jaot.apply.log` (values reduced to JSON-safe form), revert re-applies the logged before-state through the same machinery. Verified live end-to-end on the toy recipe: draft → queued → solved (obj 220, optimal) → applied (records written) → reverted (records restored), audit log rows present | done | 2026-09-19 | 6d7e6a0 |
+| P2.6 | Seeded synthetic data generators (`jaot_data.py`, framework-free): toy knapsack (seed 7) for the fast tests and gate, and the routing dataset (seed 42: one depot, four vehicles, 50 orders / 200 lines, partner geo) kept byte-identical to `scripts/spike/vrp_data.py`. Verified: both deterministic; the two routing copies produce identical output | done | 2026-09-19 | e106f49 |
+| P2.7 | Offline test suite (`tests/`, 24 `TransactionCase`s, no network): data determinism, formulation registry + `ToyKnapsack`, per-model constraints / key masking / binding+expression+domain validation, and the full lifecycle via a deterministic `FakeJaotClient` (patched `get_client`). Plain `unittest.TestCase` is not collected by the Odoo loader, so all classes inherit `TransactionCase`. Verified green on a fresh test DB: 0 failed, 0 errors of 24 | done | 2026-09-19 | 125d94a |
+| P2.8 | GATE ⛔: end-to-end on the toy recipe through base alone — **PASSED**. Covered by `test_full_lifecycle` (draft → queued → solved → applied → reverted, with per-line apply/revert audit and record restoration) and run by hand on the live dev DB. Base module is complete with zero domain logic | done | 2026-09-19 | 125d94a |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 
