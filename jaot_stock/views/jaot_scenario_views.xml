@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Scenario UI (list + form with states, Apply/Revert, KPI and the line
+         diff) already lives in jaot_base; this makes it reachable from the
+         Inventory / Operations area (PLAN P3.5). -->
+    <record id="action_jaot_scenario_vrp" model="ir.actions.act_window">
+        <field name="name">Routing scenarios</field>
+        <field name="res_model">jaot.scenario</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_no_content_smallest">
+                Create a routing scenario, solve it, review the per-picking
+                assignment, then apply it.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_jaot_scenario_vrp"
+              name="Routing scenarios"
+              parent="stock.menu_stock_warehouse_mgmt"
+              action="action_jaot_scenario_vrp"
+              sequence="90"/>
+</odoo>

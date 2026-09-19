@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Default VRP recipe for the default company (PLAN P3.2). Multi-company
+         installs add a per-company recipe from the UI; the base module is the
+         owner of the recipe/role/binding models. -->
+    <record id="recipe_vrp" model="jaot.recipe">
+        <field name="name">Delivery routing (VRP)</field>
+        <field name="code">vrp</field>
+        <field name="domain">stock</field>
+        <field name="company_id" ref="base.main_company"/>
+        <field name="description">Arc-flow + MTZ vehicle routing over haversine distance. Orders = confirmed/assigned outgoing pickings; depot = warehouse partner geo; fleet = active vehicles with a constant capacity bound.</field>
+    </record>
+
+    <!-- ============ roles ============ -->
+    <record id="role_vrp_depot_lat" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="name">depot_lat</field>
+        <field name="kind">variable</field>
+        <field name="data_type">number</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Latitude of the depot (warehouse partner).</field>
+    </record>
+    <record id="role_vrp_depot_lng" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="name">depot_lng</field>
+        <field name="kind">variable</field>
+        <field name="data_type">number</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Longitude of the depot (warehouse partner).</field>
+    </record>
+    <record id="role_vrp_order_lat" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="name">order_lat</field>
+        <field name="kind">variable</field>
+        <field name="data_type">number</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Latitude of the order's destination partner.</field>
+    </record>
+    <record id="role_vrp_order_lng" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="name">order_lng</field>
+        <field name="kind">variable</field>
+        <field name="data_type">number</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Longitude of the order's destination partner.</field>
+    </record>
+    <record id="role_vrp_order_demand" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="name">order_demand</field>
+        <field name="kind">variable</field>
+        <field name="data_type">quantity</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Order weight in kg (the capacity demand).</field>
+    </record>
+    <record id="role_vrp_vehicle" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="name">vehicle</field>
+        <field name="kind">variable</field>
+        <field name="data_type">reference</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">The fleet (record set of active vehicles).</field>
+    </record>
+    <record id="role_vrp_vehicle_capacity" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="name">vehicle_capacity</field>
+        <field name="kind">parameter</field>
+        <field name="data_type">number</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Constant kg capacity bound per vehicle (no standard cargo field in Community — P1.2 finding F1).</field>
+    </record>
+
+    <!-- ============ default bindings (default company) ============ -->
+    <record id="binding_vrp_depot_lat" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="role_id" ref="role_vrp_depot_lat"/>
+        <field name="res_model">stock.warehouse</field>
+        <field name="field_path">partner_id.partner_latitude</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_vrp_depot_lng" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="role_id" ref="role_vrp_depot_lng"/>
+        <field name="res_model">stock.warehouse</field>
+        <field name="field_path">partner_id.partner_longitude</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_vrp_order_lat" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="role_id" ref="role_vrp_order_lat"/>
+        <field name="res_model">stock.picking</field>
+        <field name="field_path">partner_id.partner_latitude</field>
+        <field name="domain">[("picking_type_code", "=", "outgoing"), ("state", "in", ("confirmed", "assigned"))]</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_vrp_order_lng" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="role_id" ref="role_vrp_order_lng"/>
+        <field name="res_model">stock.picking</field>
+        <field name="field_path">partner_id.partner_longitude</field>
+        <field name="domain">[("picking_type_code", "=", "outgoing"), ("state", "in", ("confirmed", "assigned"))]</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_vrp_order_demand" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="role_id" ref="role_vrp_order_demand"/>
+        <field name="res_model">stock.picking</field>
+        <field name="field_path">shipping_weight</field>
+        <field name="domain">[("picking_type_code", "=", "outgoing"), ("state", "in", ("confirmed", "assigned"))]</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_vrp_vehicle" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="role_id" ref="role_vrp_vehicle"/>
+        <field name="res_model">fleet.vehicle</field>
+        <field name="domain">[("active", "=", True)]</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_vrp_vehicle_capacity" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_vrp"/>
+        <field name="role_id" ref="role_vrp_vehicle_capacity"/>
+        <field name="constant_value">1600.0</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+</odoo>

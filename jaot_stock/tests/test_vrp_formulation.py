@@ -1,0 +1,80 @@
+# -*- coding: utf-8 -*-
+# License LGPL-3
+"""Offline tests for the VRP formulation (PLAN P3.4).
+
+Driven with a plain snapshot dict (the shape
+``jaot.scenario._extract_snapshot`` produces) — no Odoo, no network.
+"""
+from odoo.tests import TransactionCase
+
+from ..jaot_vrp_formulation import Vrp
+
+
+def _snapshot():
+    return {
+        'stock.warehouse': {
+            10: {'depot_lat': 40.40, 'depot_lng': -3.70},
+        },
+        'stock.picking': {
+            1: {'order_lat': 40.41, 'order_lng': -3.71,
+               'order_demand': 10.0},
+            2: {'order_lat': 40.42, 'order_lng': -3.72,
+               'order_demand': 20.0},
+            3: {'order_lat': 40.43, 'order_lng': -3.73,
+               'order_demand': 5.0},
+        },
+        'fleet.vehicle': {100: {'vehicle': 100}},
+        '_parameters': {'vehicle_capacity': 1600.0},
+    }
+
+
+class TestVrpFormulation(TransactionCase):
+
+    def test_formulate_shape(self):
+        problem = Vrp().formulate(_snapshot(), {})
+        self.assertEqual(problem['objective']['sense'], 'minimize')
+        names = [v['name'] for v in problem['variables']]
+        # 1 vehicle: x arcs (4 nodes, no self) = 12, u potentials = 3
+        self.assertEqual(len([n for n in names if n.startswith('x_')]), 12)
+        self.assertEqual(len([n for n in names if n.startswith('u_')]), 3)
+        meta = problem['metadata']
+        self.assertEqual(meta['n_orders'], 3)
+        self.assertEqual(meta['n_vehicles'], 1)
+        self.assertEqual(meta['vehicles'], [100])
+        self.assertEqual(meta['depot']['res_id'], 10)
+        self.assertEqual(set(meta['orders']), {'1', '2', '3'})
+        # one visit constraint per order
+        visits = [c for c in problem['constraints']
+                  if c['name'].startswith('visit_')]
+        self.assertEqual(len(visits), 3)
+
+    def test_formulate_requires_orders(self):
+        snap = _snapshot()
+        snap['stock.picking'] = {}
+        with self.assertRaises(ValueError):
+            Vrp().formulate(snap, {})
+
+    def test_formulate_requires_capacity(self):
+        snap = _snapshot()
+        del snap['_parameters']['vehicle_capacity']
+        with self.assertRaises(ValueError):
+            Vrp().formulate(snap, {})
+
+    def test_map_solution_single_tour(self):
+        problem = Vrp().formulate(_snapshot(), {})
+        # one vehicle, route depot -> 1 -> 2 -> 3 -> depot
+        model_values = {
+            'x_0_0_1': 1, 'x_0_1_2': 1, 'x_0_2_3': 1, 'x_0_3_0': 1,
+            'u_0_1': 1, 'u_0_2': 2, 'u_0_3': 3,
+        }
+        lines = Vrp().map_solution(problem, model_values)
+        by_id = {l['res_id']: l for l in lines}
+        self.assertEqual(set(by_id), {1, 2, 3})
+        self.assertEqual(by_id[1]['decision'],
+                         {'jaot_vehicle_id': 100, 'jaot_route_sequence': 1})
+        self.assertEqual(by_id[2]['decision'],
+                         {'jaot_vehicle_id': 100, 'jaot_route_sequence': 2})
+        self.assertEqual(by_id[3]['decision'],
+                         {'jaot_vehicle_id': 100, 'jaot_route_sequence': 3})
+        self.assertTrue(all(l['res_model'] == 'stock.picking'
+                            for l in lines))

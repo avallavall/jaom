@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The fields an applied routing solution writes to, shown on the
+         picking form (PLAN P3.4/P3.5). -->
+    <record id="view_picking_form_jaot" model="ir.ui.view">
+        <field name="name">stock.picking.form.jaot</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="JAOT routing">
+                    <field name="jaot_vehicle_id"/>
+                    <field name="jaot_route_sequence"/>
+                    <field name="jaot_scenario_id"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
