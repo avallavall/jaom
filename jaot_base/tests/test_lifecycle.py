@@ -123,3 +123,54 @@ class TestScenarioLifecycle(TransactionCase):
         items[0].write({'weight': items[0].weight + 1})
         sc.action_check_staleness()
         self.assertTrue(sc.data_stale)
+
+    def test_whatif_analysis(self):
+        """P4.3: request the what-if batch, reconcile it, store the rows.
+        Budget-truncated rows are kept as bounds (SKIPPED_BUDGET)."""
+        sc = self._scenario()
+        fake = FakeJaotClient()
+        with self._patch_client(fake):
+            sc.action_submit()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+            self.assertEqual(sc.state, 'solved')
+            sc.action_run_whatif()
+            self.assertEqual(sc.whatif_state, 'requested')
+            self.assertEqual(fake.scenario_analysis_calls, 1)
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+            self.assertEqual(sc.whatif_state, 'done')
+            self.assertGreaterEqual(fake.scenario_analysis_get_calls, 1)
+        self.assertTrue(sc.whatif_line_ids)
+        kinds = set(sc.whatif_line_ids.mapped('kind'))
+        self.assertEqual(kinds, {'rhs', 'decision'})
+        # a budget-truncated row is stored with its bound status
+        self.assertTrue(any(w.status == 'SKIPPED_BUDGET'
+                            for w in sc.whatif_line_ids))
+        # a completed RHS row carries its objective delta
+        self.assertTrue(any(
+            w.kind == 'rhs' and w.status == 'computed'
+            and w.objective_delta is not None
+            for w in sc.whatif_line_ids))
+
+    def test_whatif_requires_solved(self):
+        from odoo.exceptions import UserError
+        sc = self._scenario()
+        with self._patch_client(FakeJaotClient()):
+            with self.assertRaises(UserError):
+                sc.action_run_whatif()
+
+    def test_resolving_clears_whatif(self):
+        """A fresh solve invalidates any earlier what-if (P4.3)."""
+        sc = self._scenario()
+        fake = FakeJaotClient()
+        with self._patch_client(fake):
+            sc.action_submit()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+            sc.action_run_whatif()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+            self.assertEqual(sc.whatif_state, 'done')
+            self.assertTrue(sc.whatif_line_ids)
+            # simulate a re-solve: cancel is not needed; finalize again
+            sc._finalize_from_execution(
+                self.env['jaot.config']._config_for(self._company()))
+        self.assertEqual(sc.whatif_state, 'none')
+        self.assertFalse(sc.whatif_line_ids)

@@ -20,7 +20,7 @@ class FakeJaotClient:
     """
 
     def __init__(self, solver_status='optimal', poll_status='completed',
-                 model_values=None):
+                  model_values=None, scenario_analysis_job=None):
         self.solver_status = solver_status
         self.poll_status = poll_status
         self._fixed_model_values = model_values
@@ -30,6 +30,9 @@ class FakeJaotClient:
         self.poll_calls = 0
         self.cancelled = False
         self.infeasibility_calls = 0
+        self.scenario_analysis_calls = 0
+        self.scenario_analysis_get_calls = 0
+        self._scenario_analysis_job = scenario_analysis_job
 
     # -- submit / poll / cancel -----------------------------------------
     def solve_async(self, problem, solver_name=None, wait=False):
@@ -69,6 +72,50 @@ class FakeJaotClient:
     def infeasibility_analysis(self, execution_id):
         self.infeasibility_calls += 1
         return {'constraints': [], 'note': 'fake IIS'}
+
+    # -- scenario-analysis (what-if, P4.3) --------------------------------
+    def scenario_analysis(self, execution_id):
+        """POST …/scenario-analysis: kick off the bodyless what-if batch."""
+        self.scenario_analysis_calls += 1
+        return {'status': 'running', 'progress': {'done': 0, 'planned': 3}}
+
+    def scenario_analysis_get(self, execution_id):
+        """GET …/scenario-analysis: poll the what-if job."""
+        self.scenario_analysis_get_calls += 1
+        if self._scenario_analysis_job is not None:
+            return self._scenario_analysis_job
+        base = self._objective(self._greedy())
+        return {
+            'status': 'completed',
+            'progress': {'done': 3, 'planned': 3},
+            'analysis': {
+                'sense': 'minimize',
+                'base_objective': base,
+                'partial': True,
+                'rhs_scenarios': [
+                    {'constraint': 'capacity', 'family': 'capacity',
+                     'operator': '<=', 'direction': 'relax',
+                     'rhs': 100.0, 'rhs_new': 110.0, 'delta': 10.0,
+                     'status': 'computed',
+                     'objective_value': base - 2.0,
+                     'objective_delta': -2.0, 'improves': True,
+                     'solve_time_seconds': 0.1},
+                    {'constraint': 'capacity', 'family': 'capacity',
+                     'operator': '<=', 'direction': 'tighten',
+                     'rhs': 100.0, 'rhs_new': 90.0, 'delta': -10.0,
+                     'status': 'SKIPPED_BUDGET',
+                     'objective_value': None, 'objective_delta': None,
+                     'improves': None, 'solve_time_seconds': None},
+                ],
+                'decision_scenarios': [
+                    {'variable': 'x_1', 'family': 'binary',
+                     'original_value': 1, 'forced_value': 0,
+                     'status': 'computed',
+                     'objective_value': base + 1.0, 'regret': 1.0,
+                     'solve_time_seconds': 0.1},
+                ],
+            },
+        }
 
     # -- internals -------------------------------------------------------
     def _items(self):

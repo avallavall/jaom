@@ -69,11 +69,23 @@ class JaotScenario(models.Model):
     infeasibility = fields.Json(
         string='Infeasibility analysis', copy=False,
         help='IIS result when the solve is infeasible (SPECS 4.4).')
+    whatif_state = fields.Selection([
+        ('none', 'None'),
+        ('requested', 'Requested'),
+        ('done', 'Done'),
+        ('failed', 'Failed'),
+    ], default='none', copy=False)
+    whatif_analysis = fields.Json(
+        string='What-if analysis', copy=False,
+        help='The JAOT scenario-analysis job result '
+             '(SPECS 6.2 step 5, P4.3).')
+    whatif_error = fields.Text(string='What-if error', copy=False)
     applied = fields.Boolean(default=False, copy=False)
     applied_at = fields.Datetime(copy=False)
     applied_by = fields.Many2one('res.users', copy=False)
     scenario_line_ids = fields.One2many(
         'jaot.scenario.line', 'scenario_id')
+    whatif_line_ids = fields.One2many('jaot.scenario.whatif', 'scenario_id')
     apply_log_ids = fields.One2many('jaot.apply.log', 'scenario_id')
     line_count = fields.Integer(
         string='Lines', compute='_compute_line_count')
@@ -275,6 +287,33 @@ class JaotScenario(models.Model):
         baseline.action_submit()
         return baseline
 
+    def action_run_whatif(self):
+        """Run the JAOT what-if batch on a solved scenario (P4.3, SPECS
+        §6.2 step 5): POST the bodyless scenario-analysis on the solved
+        execution and mark it requested. The reconcile cron polls the job
+        and stores the rows (SPECS §10.1: the re-solves run out of band)."""
+        self.ensure_one()
+        if self.state not in ('solved', 'applied'):
+            raise UserError(_("Only a solved scenario can be analyzed."))
+        if not self.jaot_execution_id:
+            raise UserError(_("This scenario has no JAOT execution to "
+                              "analyze."))
+        config = self.env['jaot.config']._require_config(self.company_id)
+        client = config.get_client()
+        try:
+            client.scenario_analysis(self.jaot_execution_id)
+        except JaotAPIError as exc:
+            self.whatif_state = 'failed'
+            self.whatif_error = str(exc)
+            self.message_post(body=_("What-if analysis failed to start: %s",
+                                     exc))
+            raise UserError(_("What-if analysis failed to start: %s", exc)) \
+                from exc
+        self.whatif_state = 'requested'
+        self.whatif_error = False
+        self.message_post(body=_("What-if analysis requested."))
+        return self
+
     def action_cancel(self):
         """queued/solving -> cancelled: POST …/cancel on the JAOT task."""
         self.ensure_one()
@@ -338,6 +377,17 @@ class JaotScenario(models.Model):
             scenario.state = 'failed'
             scenario.jaot_error = _("Timed out before a JAOT task was "
                                    "recorded.")
+        # poll requested what-if batches (P4.3)
+        whatif_pending = self.search([
+            ('whatif_state', '=', 'requested'),
+            ('jaot_execution_id', '!=', False),
+        ])
+        for scenario in whatif_pending:
+            try:
+                scenario._reconcile_whatif()
+            except Exception as exc:  # keep the cron alive
+                scenario.message_post(
+                    body=_("What-if reconcile error: %s", exc))
         return len(scenarios)
 
     def _reconcile_one(self):
@@ -371,8 +421,93 @@ class JaotScenario(models.Model):
         if self.state == 'queued':
             self.state = 'solving'
 
+    def _reconcile_whatif(self):
+        """Poll a requested what-if job (P4.3) and store the rows when it
+        completes. ``absent`` means the batch was never started (or expired)
+        for this execution: re-POST it."""
+        self.ensure_one()
+        if self.whatif_state != 'requested' or not self.jaot_execution_id:
+            return
+        config = self.env['jaot.config']._config_for(self.company_id)
+        if not config:
+            return
+        try:
+            client = config.get_client()
+            job = client.scenario_analysis_get(self.jaot_execution_id)
+        except JaotAPIError as exc:
+            self.message_post(body=_("What-if poll transient error (will "
+                                     "retry): %s", exc))
+            return
+        status = job.get('status')
+        if status == 'completed':
+            self._store_whatif(job.get('analysis') or {})
+            self.whatif_state = 'done'
+            self.message_post(body=_("What-if analysis ready."))
+        elif status == 'failed':
+            self.whatif_state = 'failed'
+            self.whatif_error = str(job.get('error') or 'what-if failed')
+            self.message_post(body=_("What-if analysis failed."))
+        elif status == 'absent':
+            try:
+                client.scenario_analysis(self.jaot_execution_id)
+            except JaotAPIError as exc:
+                self.whatif_state = 'failed'
+                self.whatif_error = str(exc)
+        # running -> stay requested and poll again next tick
+
+    def _store_whatif(self, analysis):
+        """Store the scenario-analysis rows (P4.3): the RHS relax/tighten
+        rows and the decision-flip rows, each as a ``jaot.scenario.whatif``.
+        Budget-truncated rows keep their ``SKIPPED_BUDGET`` status so the UI
+        can show them as bounds (SPECS §6.2 step 5)."""
+        self.ensure_one()
+        self.whatif_analysis = analysis
+        Whatif = self.env['jaot.scenario.whatif']
+        Whatif.search([('scenario_id', '=', self.id)]).unlink()
+        seq = 0
+        for row in analysis.get('rhs_scenarios') or []:
+            seq += 10
+            Whatif.create({
+                'scenario_id': self.id,
+                'sequence': seq,
+                'kind': 'rhs',
+                'subject': row.get('constraint'),
+                'family': row.get('family'),
+                'direction': row.get('direction'),
+                'rhs_before': row.get('rhs'),
+                'rhs_after': row.get('rhs_new'),
+                'rhs_delta': row.get('delta'),
+                'improves': row.get('improves'),
+                'status': row.get('status'),
+                'objective_value': row.get('objective_value'),
+                'objective_delta': row.get('objective_delta'),
+                'solve_time_seconds': row.get('solve_time_seconds'),
+                'company_id': self.company_id.id,
+            })
+        for row in analysis.get('decision_scenarios') or []:
+            seq += 10
+            Whatif.create({
+                'scenario_id': self.id,
+                'sequence': seq,
+                'kind': 'decision',
+                'subject': row.get('variable'),
+                'family': row.get('family'),
+                'original_value': row.get('original_value'),
+                'forced_value': row.get('forced_value'),
+                'regret': row.get('regret'),
+                'status': row.get('status'),
+                'objective_value': row.get('objective_value'),
+                'solve_time_seconds': row.get('solve_time_seconds'),
+                'company_id': self.company_id.id,
+            })
+
     def _finalize_from_execution(self, config):
         self.ensure_one()
+        # a fresh solve invalidates any earlier what-if (P4.3)
+        self.whatif_state = 'none'
+        self.whatif_analysis = False
+        self.whatif_error = False
+        self.whatif_line_ids.unlink()
         client = config.get_client()
         execution = client.execution(self.jaot_execution_id)
         solver_status = execution.get('solver_status')
@@ -598,6 +733,47 @@ class JaotScenarioLine(models.Model):
     kpi_contribution = fields.Float()
     delta_vs_baseline = fields.Json(string='Delta vs baseline')
     note = fields.Char()
+    company_id = fields.Many2one(
+        'res.company', required=True, default=lambda self: self.env.company,
+        copy=False)
+
+
+class JaotScenarioWhatif(models.Model):
+    """One what-if row from the JAOT scenario-analysis batch (P4.3).
+
+    Two kinds share the table: ``rhs`` rows (a constraint's RHS relaxed or
+    tightened) and ``decision`` rows (a binary flipped). Budget-truncated
+    rows keep their ``SKIPPED_BUDGET`` status and a null objective so the
+    view can present them as bounds, never as a silent gap.
+    """
+
+    _name = 'jaot.scenario.whatif'
+    _description = 'JAOT scenario what-if row'
+    _order = 'sequence, id'
+
+    scenario_id = fields.Many2one(
+        'jaot.scenario', required=True, ondelete='cascade', index=True)
+    sequence = fields.Integer(default=10)
+    kind = fields.Selection([
+        ('rhs', 'Constraint RHS'),
+        ('decision', 'Decision flip'),
+    ], required=True)
+    subject = fields.Char(string='Subject')
+    family = fields.Char()
+    direction = fields.Char(string='Direction')
+    rhs_before = fields.Float(string='RHS (before)')
+    rhs_after = fields.Float(string='RHS (after)')
+    rhs_delta = fields.Float(string='RHS delta')
+    improves = fields.Boolean(string='Improves')
+    original_value = fields.Float(string='Original value')
+    forced_value = fields.Float(string='Forced value')
+    regret = fields.Float(string='Regret')
+    status = fields.Char(
+        string='Status',
+        help='computed, infeasible, or SKIPPED_BUDGET (shown as a bound).')
+    objective_value = fields.Float(string='Objective value')
+    objective_delta = fields.Float(string='Objective delta')
+    solve_time_seconds = fields.Float()
     company_id = fields.Many2one(
         'res.company', required=True, default=lambda self: self.env.company,
         copy=False)

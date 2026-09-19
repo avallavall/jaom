@@ -30,6 +30,10 @@
                             string="Check staleness" class="btn-link"
                             invisible="state not in ('solved','applied')"
                             groups="jaot_base.group_manager"/>
+                    <button name="action_run_whatif" type="object"
+                            string="What-if analysis" class="btn-secondary"
+                            invisible="state not in ('solved','applied')"
+                            groups="jaot_base.group_manager"/>
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
@@ -88,6 +92,30 @@
                         </page>
                         <page string="KPI summary" name="kpi">
                             <field name="kpi_summary" nolabel="1"/>
+                        </page>
+                        <page string="What-if analysis" name="whatif"
+                              invisible="whatif_state == 'none'">
+                            <group>
+                                <group>
+                                    <field name="whatif_state"/>
+                                </group>
+                                <group>
+                                    <field name="whatif_error"
+                                           invisible="whatif_state != 'failed'"/>
+                                </group>
+                            </group>
+                            <field name="whatif_line_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="kind"/>
+                                    <field name="subject"/>
+                                    <field name="direction"/>
+                                    <field name="status"/>
+                                    <field name="objective_value"/>
+                                    <field name="objective_delta"/>
+                                    <field name="regret"/>
+                                </list>
+                            </field>
                         </page>
                         <page string="Payloads" name="payloads"
                               groups="base.group_system">

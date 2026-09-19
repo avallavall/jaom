@@ -17,6 +17,9 @@ access_jaot_scenario_manager,jaot.scenario.manager,model_jaot_scenario,jaot_base
 access_jaot_scenario_line_system,jaot.scenario.line.system,model_jaot_scenario_line,base.group_system,1,1,1,1
 access_jaot_scenario_line_user,jaot.scenario.line.user,model_jaot_scenario_line,jaot_base.group_user,1,0,0,0
 access_jaot_scenario_line_manager,jaot.scenario.line.manager,model_jaot_scenario_line,jaot_base.group_manager,1,1,1,1
+access_jaot_scenario_whatif_system,jaot.scenario.whatif.system,model_jaot_scenario_whatif,base.group_system,1,1,1,1
+access_jaot_scenario_whatif_user,jaot.scenario.whatif.user,model_jaot_scenario_whatif,jaot_base.group_user,1,0,0,0
+access_jaot_scenario_whatif_manager,jaot.scenario.whatif.manager,model_jaot_scenario_whatif,jaot_base.group_manager,1,1,1,1
 access_jaot_apply_log_system,jaot.apply.log.system,model_jaot_apply_log,base.group_system,1,1,1,1
 access_jaot_apply_log_user,jaot.apply.log.user,model_jaot_apply_log,jaot_base.group_user,1,0,0,0
 access_jaot_apply_log_manager,jaot.apply.log.manager,model_jaot_apply_log,jaot_base.group_manager,1,1,1,1
