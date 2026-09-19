@@ -1,75 +1,99 @@
-# MVP acceptance runbook (PLAN P3.8)
+# MVP acceptance gate (PLAN P3.8)
 
-This is the runbook for the **P3.8 MVP gate**: the SPECS §11.1 acceptance flow
-run on a fresh Odoo 19 + JAOT. It is a *runbook* for the maintainer to execute
-and fill with screenshots. A run is only "done" when the maintainer has
-performed it end to end and recorded the screenshots below. Nothing here is a
-claim that the gate has passed.
+This is the record of the **P3.8 MVP gate**: the SPECS §11.1 acceptance flow,
+run end to end on the dev stack (Odoo 19 + a reachable JAOT) and captured with
+screenshots. Run on 2026-09-19 via Playwright against the live `odoo` database.
 
-**What it covers today (P3.1–P3.7):** the core routing flow on a real
-stock/fleet dataset. The **baseline comparison** ("diff vs baseline") in
-SPECS §11.1 step 1 is a **Phase 4** feature (P4.1/P4.2), so this run shows the
-routing decision lines, not a baseline delta yet. See the open question at the
-bottom before treating §11.1 as fully satisfied.
+The gate covers the core routing flow **and** the baseline comparison
+("diff vs baseline", SPECS §11.1 step 1, implemented in P4.1/P4.2). The
+staleness warning (SPECS §4.6) is shown at the end.
 
-## Prerequisites
+**Dataset.** Three confirmed/assigned outgoing pickings (508, 509, 510), each
+with a destination partner that has coordinates and a shipping weight, one
+active `fleet.vehicle` (17), and a depot warehouse contact with coordinates.
+An incumbent plan was written on the pickings in a deliberately suboptimal
+order so the optimized solution and the baseline differ.
 
-- Fresh Odoo 19 Community database with `stock`, `fleet`, `jaot_base` and
-  `jaot_stock` installed (`jaot_stock` auto-installs when `stock`+`fleet` are
-  present).
-- A reachable JAOT instance (pinned v3.x) and an API key.
-- The dev setup (`dev/docker-compose.yml` + `dev/.env`) or an equivalent.
+## 1. JAOT connection (01)
 
-## Setup (one time)
+`JAOT → Configuration → JAOT connection`: the endpoint is set, the API key is
+stored (shown masked), and the default solver is `scip`.
 
-1. **Configure JAOT.** *JAOT → Configuration → JAOT connection* (per company):
-   set the endpoint URL and the API key. Save. (The key is stored masked.)
-   Screenshot: the connection form + a successful connection test.
-2. **Confirm the recipe.** The install created the `vrp` recipe with its
-   default bindings for this company. *JAOT → Configuration → Recipes*: open
-   it. The bindings read the depot geo from `stock.warehouse`, order geo +
-   weight from outgoing `stock.picking`, the fleet from `fleet.vehicle`, and a
-   constant capacity parameter. Screenshot: the recipe + its roles + bindings.
+![JAOT connection](assets/mvp/01_config.png)
 
-## The acceptance flow (SPECS §11.1, core)
+## 2. Draft scenario (02)
 
-3. **Seed a route.** Create a few confirmed/assigned **outgoing** pickings
-   (each with a destination partner that has coordinates and a shipping
-   weight), make sure the warehouse contact has coordinates, and create at
-   least one active `fleet.vehicle`. Screenshot: the pickings.
-4. **Open a scenario.** *Inventory → Operations → Routing scenarios* (or the
-   JAOT app) → create a scenario on the `vrp` recipe. Screenshot: the
-   scenario list with states.
-5. **Solve.** Press **Submit**; the scenario goes to `queued`. Let the
-   reconciliation cron (or a manual reconcile) run; it goes to `solved`.
-   Screenshot: the scenario `solved`, with the solver status and objective.
-6. **Review the decision.** The scenario's line view shows one line per
-   picking with the assigned vehicle and route position. Screenshot: the line
-   view (this is the "diff view" that is the product).
-7. **Apply.** Press **Apply** (manager only, with confirmation). Each picking
-   is written with its vehicle and route position. Screenshot: a picking form
-   showing the JAOT routing fields.
-8. **Audit.** *JAOT → apply log*: one row per written field, before/after.
-   Screenshot: the apply log.
-9. **Revert.** Press **Revert**. The picking fields return to their
-   before-state. Screenshot: the picking restored + the reverted log rows.
+A scenario on the `vrp` recipe, in `draft`. The recipe extracts its data from
+the company's pickings, warehouse and fleet via its bindings (SPECS §4.1), so
+no source list is set on the scenario itself.
 
-## Optional (SPECS §11.1 step 2)
+![Draft scenario](assets/mvp/02_scenario_draft.png)
 
-10. **Re-binding, no code.** Remap one binding to a custom/OCA source for this
-    company (e.g. a different geo or weight field) and re-solve. No code
-    changes; the scenario picks up the new data. Screenshot: the edited
-    binding + the re-solved scenario.
+## 3. Solved (03)
 
-## Open question for the maintainer
+**Solve** submits the extracted problem to JAOT. After the reconciliation the
+scenario is `solved`: solver `scip`, status `optimal`, objective `47.62`
+(haversine distance, minimised). The line view shows one line per picking with
+the assigned vehicle and route position:
 
-SPECS §11.1 step 1 says "the scenario shows the **diff vs baseline**," but
-baseline capture is implemented in Phase 4 (P4.1/P4.2). Two readings:
+- 508 → vehicle 17, position 1
+- 509 → vehicle 17, position 2
+- 510 → vehicle 17, position 3
 
-- (a) The P3.8 MVP gate covers the core flow above (solve → decision lines →
-  apply → audit → revert), and the baseline delta is verified when Phase 4
-  lands.
-- (b) The MVP gate requires the baseline delta, so Phase 4 must precede it.
+This is the decision view that is the product.
 
-Please confirm which reading stands so the gate scope is fixed. Until then the
-gate is treated as the **core flow** (reading a).
+![Solved scenario with decision lines](assets/mvp/03_scenario_solved.png)
+
+## 4. Diff vs baseline (04)
+
+**Compare with baseline** re-solves the recipe with every decision pinned to
+the incumbent plan (the fix-all baseline, SPECS §4.6 / P4.1). The optimized and
+baseline objectives and their delta are stored on the scenario:
+
+- optimized objective: `47.62`
+- baseline objective: `55.99`
+- delta vs baseline: `8.36` (the incumbent plan is 8.36 units worse)
+
+The KPI summary carries `objective_value`, `baseline_objective`,
+`optimized_objective` and `delta_vs_baseline`; each line also carries its own
+`delta_vs_baseline`.
+
+![KPI summary with baseline delta](assets/mvp/04_scenario_kpi_delta.png)
+
+## 5. Apply (05, 06)
+
+**Apply** (manager only) writes each picking with its vehicle and route
+position from the solved lines. The picking form shows the `JAOT routing`
+fields populated.
+
+![Applied scenario](assets/mvp/05_scenario_applied.png)
+
+![Picking with JAOT routing fields](assets/mvp/06_picking_applied.png)
+
+## 6. Apply log (07)
+
+`JAOT → Apply log`: one row per written field, with the before and after
+values. The apply produced six rows (three pickings, vehicle + position).
+
+![Apply log](assets/mvp/07_apply_log.png)
+
+## 7. Revert (08)
+
+**Revert** returns every picking to its before-state (the incumbent plan) and
+stamps the apply-log rows. The scenario goes back to `solved`.
+
+![Reverted scenario](assets/mvp/08_scenario_reverted.png)
+
+## 8. Staleness (09, SPECS §4.6)
+
+After extraction, one picking's weight was changed. **Check staleness** then
+flags the scenario: "Solved against stale data: the underlying Odoo records
+changed after extraction." The warning appears at the top of the form.
+
+![Stale-data warning](assets/mvp/09_scenario_stale.png)
+
+## Result
+
+The acceptance flow runs end to end: configure, solve, review the decision,
+diff against the baseline, apply, audit, revert, and detect staleness. The
+apply/revert round-trip was verified against the incumbent plan.
