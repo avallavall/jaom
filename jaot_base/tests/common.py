@@ -1,0 +1,175 @@
+# -*- coding: utf-8 -*-
+# License LGPL-3
+"""Shared helpers for the jaot_base test suite (PLAN P2.7).
+
+``FakeJaotClient`` is a framework-free stand-in for ``JaotClient``:
+deterministic, no network. The lifecycle tests patch
+``jaot.config.JaotConfig.get_client`` to return one, so the whole
+draft -> queued -> solved -> applied -> reverted flow runs offline.
+"""
+
+
+class FakeJaotClient:
+    """Deterministic offline stand-in for ``JaotClient``.
+
+    ``solve_async`` stores the problem; ``execution`` returns a terminal
+    envelope whose ``result_data.model`` is a greedy knapsack over the
+    problem's own ``metadata`` (the same items and capacity the real solver
+    would have seen). ``model_values`` overrides the greedy result when a
+    test wants a fixed solution.
+    """
+
+    def __init__(self, solver_status='optimal', poll_status='completed',
+                 model_values=None):
+        self.solver_status = solver_status
+        self.poll_status = poll_status
+        self._fixed_model_values = model_values
+        self.task_id = 'fake-task-1'
+        self.execution_id = 'fake-exec-1'
+        self._problem = None
+        self.poll_calls = 0
+        self.cancelled = False
+        self.infeasibility_calls = 0
+
+    # -- submit / poll / cancel -----------------------------------------
+    def solve_async(self, problem, solver_name=None, wait=False):
+        self._problem = problem
+        return {
+            'task_id': self.task_id,
+            'execution_id': self.execution_id,
+            'status': 'queued',
+            'message': 'accepted',
+            'poll_url': '/api/v2/solve/async/%s' % self.task_id,
+        }
+
+    def poll_task(self, task_id):
+        self.poll_calls += 1
+        return {'status': self.poll_status}
+
+    def cancel_task(self, task_id):
+        self.cancelled = True
+        return {'status': 'cancelled'}
+
+    # -- terminal envelope ----------------------------------------------
+    def execution(self, execution_id):
+        model_values = (self._fixed_model_values
+                        if self._fixed_model_values is not None
+                        else self._greedy())
+        return {
+            'solver_status': self.solver_status,
+            'solver_name': 'fake-scip',
+            'execution_time_ms': 123,
+            'result_data': {
+                'model': model_values,
+                'objective_value': self._objective(model_values),
+                'gap': 0.0,
+            },
+        }
+
+    def infeasibility_analysis(self, execution_id):
+        self.infeasibility_calls += 1
+        return {'constraints': [], 'note': 'fake IIS'}
+
+    # -- internals -------------------------------------------------------
+    def _items(self):
+        return (self._problem.get('metadata') or {}).get('items', {})
+
+    def _capacity(self):
+        return (self._problem.get('metadata') or {}).get('capacity', 0.0)
+
+    def _greedy(self):
+        items = self._items()
+        remaining = float(self._capacity())
+        order = sorted(
+            items,
+            key=lambda k: -float(items[k]['value'])
+            / max(float(items[k]['weight']), 1e-9))
+        selected = {}
+        for res_id in order:
+            weight = float(items[res_id]['weight'])
+            if weight <= remaining:
+                selected['x_%s' % res_id] = 1
+                remaining -= weight
+            else:
+                selected['x_%s' % res_id] = 0
+        for res_id in items:
+            selected.setdefault('x_%s' % res_id, 0)
+        return selected
+
+    def _objective(self, model_values):
+        total = 0.0
+        for res_id, item in self._items().items():
+            if model_values.get('x_%s' % res_id):
+                total += float(item['value'])
+        return total
+
+
+def make_toys(env, company, capacity=None):
+    """Create (idempotently) the ``toy_knapsack`` recipe, its roles and
+    bindings, and one ``jaot.demo.item`` per generated item.
+
+    Returns ``(recipe, items)`` where ``items`` is the recordset.
+    """
+    from ..jaot_data import generate_knapsack
+
+    data = generate_knapsack()
+    if capacity is not None:
+        data['capacity'] = capacity
+
+    Recipe = env['jaot.recipe']
+    recipe = Recipe.search(
+        [('code', '=', 'toy_knapsack'), ('company_id', '=', company.id)])
+    if not recipe:
+        recipe = Recipe.create({
+            'code': 'toy_knapsack', 'name': 'Toy Knapsack',
+            'domain': 'stock', 'company_id': company.id})
+        Role = env['jaot.recipe.role']
+        Binding = env['jaot.binding']
+
+        def role(name, kind, data_type):
+            r = Role.create({
+                'recipe_id': recipe.id, 'name': name, 'kind': kind,
+                'data_type': data_type, 'required': True})
+            return r
+
+        r_item = role('item', 'variable', 'reference')
+        r_weight = role('weight', 'variable', 'quantity')
+        r_value = role('value', 'variable', 'quantity')
+        r_capacity = role('capacity', 'parameter', 'number')
+
+        Binding.create({
+            'recipe_id': recipe.id, 'role_id': r_item.id,
+            'res_model': 'jaot.demo.item', 'field_path': 'name',
+            'company_id': company.id})
+        Binding.create({
+            'recipe_id': recipe.id, 'role_id': r_weight.id,
+            'res_model': 'jaot.demo.item', 'field_path': 'weight',
+            'company_id': company.id})
+        Binding.create({
+            'recipe_id': recipe.id, 'role_id': r_value.id,
+            'res_model': 'jaot.demo.item', 'field_path': 'value',
+            'company_id': company.id})
+        Binding.create({
+            'recipe_id': recipe.id, 'role_id': r_capacity.id,
+            'constant_value': str(data['capacity']),
+            'company_id': company.id})
+
+    Item = env['jaot.demo.item']
+    Item.search([('company_id', '=', company.id)]).unlink()
+    items = Item.create([
+        {'name': it['name'], 'weight': it['weight'], 'value': it['value'],
+         'selected': False, 'company_id': company.id}
+        for it in data['items']
+    ])
+    return recipe, items
+
+
+def make_config(env, company):
+    """Create (idempotently) the per-company ``jaot.config``."""
+    Config = env['jaot.config']
+    cfg = Config.search([('company_id', '=', company.id)])
+    if not cfg:
+        cfg = Config.create({
+            'company_id': company.id,
+            'endpoint_url': 'http://fake-jaot.invalid'})
+    return cfg
