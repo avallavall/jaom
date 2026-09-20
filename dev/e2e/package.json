@@ -1,0 +1,13 @@
+{
+  "name": "jaom-e2e",
+  "version": "1.0.0",
+  "description": "Playwright end-to-end suite for the JAOM Odoo add-ons (dev tooling, lint-excluded).",
+  "main": "e2e.mjs",
+  "scripts": {
+    "test": "node e2e.mjs"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "playwright": "^1.54.2"
+  }
+}
