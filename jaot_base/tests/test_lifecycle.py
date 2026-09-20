@@ -78,6 +78,15 @@ class TestScenarioLifecycle(TransactionCase):
             [('scenario_id', '=', sc.id), ('state', '=', 'reverted')])
         self.assertEqual(len(reverted), sc.line_count)
 
+    def test_reconcile_cron_code_runs(self):
+        # The scheduler fires the cron through the server action's stored
+        # `code` string (ir.cron _inherits ir.actions.server). Run it the
+        # exact same way the scheduler does, so a bad name in that string is
+        # caught here: the original `object.` reference raised a NameError,
+        # so the reconcile cron silently never fired on its own.
+        cron = self.env.ref('jaot_base.ir_cron_jaot_reconcile')
+        cron.ir_actions_server_id.run()
+
     def test_cancel_from_queued(self):
         sc = self._scenario()
         fake = FakeJaotClient()

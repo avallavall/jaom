@@ -4,6 +4,9 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- Fix: the background reconcile job that polls submitted scenarios now
+  actually fires — it was silently erroring on every run, so a queued
+  solve only got picked up when reconciled by hand.
 - Solved scenarios now carry a manager-readable explanation (new form
   section): the objective decomposed into named terms, the tight
   constraints in plain language; infeasible solves get a plain-language
