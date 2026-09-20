@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v1.0 — 2026-09-20 (Phase 4 complete (P4.5 done: upstream feature request filed as avallavall/jaot#3); Phase 5 complete: P5.1–P5.6 done, P5.7 gate **PASSED** — all four CI jobs green locally, evidence in `docs/ci.md`; P5.8 live e2e acceptance suite (`dev/e2e`, Playwright) — 31/31 cases green against the live stack (full scenario surface: connection lifecycle, authoring validation, UI flows, MRP + VRP lifecycles, state guards, role controls), and surfaced and fixed the manager ACL gaps, the missing scenario-link stamp on apply, and the non-list domain validation hole; Phase 6: P6.1 `jaot_mrp` done — the second domain at the same quality bar, 14 tests green in the 5 620-test run; Phase 7 complete except P7.2 — blocked(external): the public store listing is the maintainer's call; P8.1 done: local tag `v1.0.0` + changelog. Remaining external items: P7.2, any `git push` / announcement, first external user live; Phase 9 scoped (v1.1: P9.1–P9.6, all todo — see §13 in SPECS)
+**Status:** v1.0 — 2026-09-20 (Phase 4 complete (P4.5 done: upstream feature request filed as avallavall/jaot#3); Phase 5 complete: P5.1–P5.6 done, P5.7 gate **PASSED** — all four CI jobs green locally, evidence in `docs/ci.md`; P5.8 live e2e acceptance suite (`dev/e2e`, Playwright) — 31/31 cases green against the live stack (full scenario surface: connection lifecycle, authoring validation, UI flows, MRP + VRP lifecycles, state guards, role controls), and surfaced and fixed the manager ACL gaps, the missing scenario-link stamp on apply, and the non-list domain validation hole; Phase 6: P6.1 `jaot_mrp` done — the second domain at the same quality bar, 14 tests green in the 5 620-test run; Phase 7 complete except P7.2 — blocked(external): the public store listing is the maintainer's call; P8.1 done: local tag `v1.0.0` + changelog. Remaining external items: P7.2, any `git push` / announcement, first external user live; Phase 9 started: P9.0 (RAG index cleanup, EN+ES) done; P9.1–P9.6 todo — see §13 in SPECS
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -72,6 +72,7 @@ who verifies).
 | P7.3 | Versioning + changelog — `CHANGELOG.md` 1.0.0 entry (1–3 user-facing lines) | done | 2026-09-20 | 5b2c0af |
 | P7.4 | Fresh-install smoke — clean DB on the pinned image, public docs only, live pinned JAOT: install 51 s (74 modules), connection → SCIP solve (500.0) → baseline (575.0, delta 75.0) → apply → revert → staleness, ~1.5 min total (< 30 min target) — `docs/smoke.md` | done | 2026-09-20 | 5b2c0af |
 | P8.1 | First public version — local tag `v1.0.0`, changelog committed; the announcement (repo + P7.2 channel) and any push are the maintainer's | done | 2026-09-20 | — (local tag) |
+| P9.0 | RAG index cleanup — `docs/rag_odoo19.md` trimmed from 944 links to the 422 pages the project touches (essentials, general w/o IoT & integrations, core accounting w/o localizations & payment providers, inventory & MRP, shipping, fleet, developer, administration); each kept page now listed twice, English + Spanish (`/19.0/es/`), so the index is actually consultable; dropped sections re-scrape from the home toctree if ever needed | done | 2026-09-20 | 0bee11e |
 | P9.1 | Plan explanation — objective decomposition post-processing + binding-constraint report from the existing exact analysis + plain-language IIS summary; `jaot.scenario.explanation` (Json) + form section (SPECS §13.1) | todo | — | — |
 | P9.2 | Named scenario runner — `jaot.scenario.case` (name, scenario, parameter perturbations, child run, comparison view), `max_parallel_cases`, `max_vehicles` parameter role on the VRP recipe (SPECS §13.2) | todo | — | — |
 | P9.3 | es translation — full msgstr × 3 modules + CI po-vs-pot msgid parity (SPECS §13.3, §10.5) | todo | — | — |
@@ -312,6 +313,7 @@ buffers interact with method choice. Full sources:
 
 | Task | Description | Status | Date | Notes |
 |---|---|---|---|---|
+| P9.0 | RAG index cleanup (EN + ES, JAOM-relevant sections) | done | 2026-09-20 | 0bee11e |
 | P9.1 | Plan explanation | todo | — | — |
 | P9.2 | Named scenario runner | todo | — | — |
 | P9.3 | es translation + CI parity check | todo | — | — |
