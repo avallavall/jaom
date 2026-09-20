@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v0.9 — 2026-09-19 (Phase 3 complete and the P3.8 MVP gate run end to end incl. the baseline delta; Phase 4 complete: P4.1 baseline fix-all, P4.2 KPI delta, P4.3 what-if, P4.4 staleness, P4.6 comparison gate run; only P4.5 remains — file the upstream JAOT issue, external to this repo)
+**Status:** v1.0-rc — 2026-09-20 (Phase 4 complete except P4.5 — file the upstream JAOT issue, blocked(external): the maintainer's GitHub account; Phase 5 complete: P5.1–P5.6 done, P5.7 gate **PASSED** — all four CI jobs green locally, evidence in `docs/ci.md`; Phase 6: P6.1 `jaot_mrp` done — the second domain at the same quality bar, 14 tests green in the 5 620-test run; next: Phase 7 packaging (README + changelog + fresh-install smoke) and P8.1)
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -58,6 +58,14 @@ who verifies).
 | P4.4 | Staleness: snapshot-hash check on reconciliation + a **Check staleness** action and a warning banner on the scenario form (SPECS §4.6) | done | 2026-09-19 | 735c157 |
 | P4.5 | Upstream: file the JAOT issue for a native evaluate-only / what-if endpoint. External (maintainer's GitHub account) | todo | 2026-09-19 | — |
 | P4.6 | GATE ⛔: the comparison flow tested end to end, including the baseline delta — run on the dev stack (Odoo 19 + live JAOT), evidence in `docs/mvp.md`. Optimized 47.62 vs baseline 55.99 (delta 8.36); apply/revert round-trip verified | done | 2026-09-19 | 268f2c9 |
+| P5.1 | Realistic + stress datasets (multi-warehouse, multi-company, 50 k records), deterministic in `jaot_data.py` | done | 2026-09-20 | e675348 |
+| P5.2 | Security pass (SPECS §7): negative cross-company extraction tests, `safe_eval` negatives, key masking | done | 2026-09-20 | 0da5cb0 |
+| P5.3 | Performance measurements per SPECS §10 in `docs/PERF.md`: extraction at 50 k 2.20 s, apply of 1 000 lines 13.14 s, cron poll (100) 0.04 s — all targets met | done | 2026-09-20 | 5bb51d9 |
+| P5.4 | Error-path tests (SPECS §4.4): JAOT down/timeout, solver error, infeasible + IIS, worker restart, cancel race | done | 2026-09-20 | f3342b9 |
+| P5.5 | i18n: complete `.pot` templates for `jaot_base` + `jaot_stock`, checked in CI (P5.6) | done | 2026-09-20 | 2192bf4 |
+| P5.6 | CI (GitHub Actions, 4 jobs): lint (ruff 0.15.6 pinned), tests (offline; two core tests excluded, both verified against the image — `base:TestCommand` resolves `odoo-bin` relative to the test file, which breaks in the Debian-packaged `odoo:19.0` image; `account_edi_ubl_cii` `test_invoice_deferred_dates` writes a field that only exists with the Turkish e-invoice l10n), contract-smoke (pinned JAOT `c5a07e2`, frozen field names), i18n (committed pots must match the code). All four jobs verified locally | done | 2026-09-20 | 1e3773c |
+| P5.7 | GATE ⛔: CI green from a clean checkout, SPECS §10 targets documented — **PASSED**: all four jobs run locally against the pinned inputs — lint pass; tests 0 failed / 0 errors of 5 620 on a fresh database (30 min 11 s); contract-smoke PASS against the live pinned JAOT stack; i18n regenerate + content check pass. SPECS §10 targets in `docs/PERF.md` | done | 2026-09-20 | e4ef74f |
+| P6.1 | `jaot_mrp` — production scheduling: single-machine capacitated lot-sizing over `mrp.production` (confirmed/planned orders with deadlines; days = distinct deadline dates; x/q/i variables; bal/deliver/link/cap constraints; setup + holding objective). Baseline fix-all pins x to the incumbent start days; an infeasible incumbent is a finding. Cost parameters from parameter bindings (Community has no standard source, P1.2 F1). 14 tests green offline (fake client) | done | 2026-09-20 | c87f9af |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 
