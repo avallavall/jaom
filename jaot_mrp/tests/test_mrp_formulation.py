@@ -147,3 +147,64 @@ class TestMrpFormulation(TransactionCase):
                 if c['name'].startswith('fix_4_')}
         self.assertTrue(pins)
         self.assertTrue(all(v == 0 for v in pins.values()))
+
+    # -- plan explanation (SPECS 13.1) ------------------------------------
+    def test_explain_objective_terms(self):
+        problem = MrpLotSizing().formulate(_snapshot(), {})
+        f = MrpLotSizing()
+        # the incumbent: orders 3-4 produced on day 1, held one day
+        model_values = {
+            'x_1_1': 1, 'q_1_1': 100.0,
+            'x_2_1': 1, 'q_2_1': 100.0,
+            'x_3_1': 1, 'q_3_1': 150.0, 'i_3_1': 150.0,
+            'x_4_1': 1, 'q_4_1': 150.0, 'i_4_1': 150.0,
+        }
+        terms = f.explain_objective(problem, model_values)
+        by_name = {t['name']: t['value'] for t in terms}
+        self.assertEqual(set(by_name), {'Setups', 'Inventory holding'})
+        self.assertEqual(by_name['Setups'], 4 * 250.0)
+        self.assertEqual(by_name['Inventory holding'], 0.5 * 300.0)
+        # the terms sum to the objective of this plan (no solver call)
+        self.assertEqual(sum(t['value'] for t in terms), 1150.0)
+        # a plan with no holding has a zero holding term
+        model_values = {
+            'x_1_1': 1, 'q_1_1': 100.0,
+            'x_2_1': 1, 'q_2_1': 100.0,
+            'x_3_2': 1, 'q_3_2': 150.0,
+            'x_4_2': 1, 'q_4_2': 150.0,
+        }
+        by_name = {t['name']: t['value']
+                   for t in f.explain_objective(problem, model_values)}
+        self.assertEqual(by_name['Setups'], 4 * 250.0)
+        self.assertEqual(by_name['Inventory holding'], 0.0)
+
+    def test_explain_constraint_labels(self):
+        problem = MrpLotSizing().formulate(_snapshot(), {})
+        f = MrpLotSizing()
+        names = {('mrp.production', 1): 'MO A', ('mrp.production', 3): 'MO C'}
+        self.assertEqual(
+            f.explain_constraint('cap_1', problem, names),
+            'Production capacity for 2026-10-05')
+        self.assertEqual(
+            f.explain_constraint('cap_2', problem, names),
+            'Production capacity for 2026-10-06')
+        self.assertEqual(
+            f.explain_constraint('deliver_3', problem, names),
+            'Order MO C must be delivered in full by 2026-10-06')
+        # no display names -> the generic label, still plain language
+        self.assertEqual(
+            f.explain_constraint('deliver_3', problem, None),
+            'An order must be delivered in full by 2026-10-06')
+        # baseline fixes label only when they pin the incumbent start
+        baseline = MrpLotSizing().formulate(
+            _snapshot_baseline(), {'is_baseline': True})
+        self.assertEqual(
+            f.explain_constraint('fix_3_1', baseline, None),
+            'An order keeps its current start day 2026-10-05')
+        self.assertIsNone(f.explain_constraint('fix_1_2', baseline, None))
+        # structural and unknown machine names stay invisible
+        self.assertIsNone(f.explain_constraint('bal_3_1', problem, names))
+        self.assertIsNone(f.explain_constraint('link_1_1', problem, names))
+        self.assertIsNone(f.explain_constraint('cap_9', problem, names))
+        self.assertIsNone(f.explain_constraint('deliver_99', problem, names))
+        self.assertIsNone(f.explain_constraint('fix_bad', problem, names))

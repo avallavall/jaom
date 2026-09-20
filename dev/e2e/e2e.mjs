@@ -967,6 +967,40 @@ case_('apply_log_view', async (ctx) => {
   assert(rows > 0, 'apply log list rendered no rows');
 });
 
+case_('explanation_section', async (ctx) => {
+  // SPECS 13.1: a solved scenario stores a manager-readable explanation
+  // (objective decomposed into named terms + the tight constraints in
+  // plain language) and the form shows it in its own section.
+  const sid = ctx.mrpSolvedId;
+  assert(sid, 'no solved MRP scenario');
+  const row = await readScenario(ctx.rpc, sid, ['explanation', 'explanation_text']);
+  assert(row.explanation, 'solved scenario carries no explanation');
+  assert(row.explanation.objective && typeof row.explanation.objective.value === 'number',
+    `no objective block in the explanation: ${JSON.stringify(row.explanation)}`);
+  assert(Array.isArray(row.explanation.objective.terms)
+    && row.explanation.objective.terms.length > 0,
+    'objective not decomposed into named terms');
+  assert(row.explanation.objective.terms.every((t) => t.name && typeof t.value === 'number'),
+    `objective terms not named/numeric: ${JSON.stringify(row.explanation.objective.terms)}`);
+  const text = row.explanation_text || '';
+  assert(/Objective value/.test(text), 'explanation text missing the objective line');
+  assert(/Tightly used constraints:/.test(text), 'explanation text missing the tight constraints');
+  // no machine identifiers (cap_1, deliver_<id>, x_1_1 ...) leak into the text
+  assert(!/cap_\d|deliver_\d|x_\d+_\d|q_\d+_\d|fix_\d|bal_\d|link_\d/.test(text),
+    `machine identifiers in the manager text: ${text}`);
+  // the form renders the Explanation section
+  await openForm(ctx.page, sid);
+  // Odoo 19 renders notebook tabs as a.nav-link under .o_notebook_headers
+  const tab = ctx.page.locator('.o_notebook_headers .nav-link',
+                               { hasText: 'Explanation' });
+  assert(await tab.count() > 0, 'Explanation tab not visible in the form');
+  await tab.first().click();
+  await ctx.page.waitForTimeout(1000);
+  const formText = await ctx.page.locator('.o_form_view').innerText();
+  assert(/Objective value/.test(formText), 'Explanation section did not render the objective');
+  assert(/Tightly used constraints:/.test(formText), 'Explanation section missing the tight constraints');
+});
+
 // ----------------------------------------------------------------------
 // runner
 // ----------------------------------------------------------------------

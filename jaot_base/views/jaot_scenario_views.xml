@@ -95,6 +95,11 @@
                         <page string="KPI summary" name="kpi">
                             <field name="kpi_summary" nolabel="1"/>
                         </page>
+                        <page string="Explanation" name="explanation"
+                              invisible="not explanation">
+                            <field name="explanation" invisible="1"/>
+                            <field name="explanation_text" nolabel="1"/>
+                        </page>
                         <page string="What-if analysis" name="whatif"
                               invisible="whatif_state == 'none'">
                             <group>

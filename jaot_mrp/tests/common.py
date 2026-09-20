@@ -34,6 +34,7 @@ class FakeMrpClient:
         self.poll_calls = 0
         self.cancelled = False
         self.infeasibility_calls = 0
+        self.exact_analysis_calls = 0
         self._next = 0
         self._tasks = {}  # task_id -> {'status', 'execution_id', 'problem'}
 
@@ -118,6 +119,7 @@ class FakeMrpClient:
                 values['q_%s_%d' % (oid, d)] = o['qty']
                 for d2 in range(d, o['due_day']):
                     values['i_%s_%d' % (oid, d2)] = o['qty']
+        entry['values'] = values
         return {
             'solver_status': self.solver_status,
             'solver_name': 'fake-scip',
@@ -139,7 +141,73 @@ class FakeMrpClient:
 
     def infeasibility_analysis(self, execution_id):
         self.infeasibility_calls += 1
-        return {'constraints': ['deliver_*'], 'note': 'fake IIS'}
+        entry = next((t for t in self._tasks.values()
+                      if t['execution_id'] == execution_id), None)
+        iis = []
+        if entry is not None:
+            meta = (entry['problem'].get('metadata') or {})
+            if meta.get('days'):
+                iis.append('cap_1')
+            orders = meta.get('orders', {})
+            if orders:
+                iis.append('deliver_%s' % sorted(orders, key=int)[0])
+        return {
+            'iis_constraints': iis,
+            'iis_variable_bounds': [],
+            'conflict_type': 'constraint',
+            'method': 'iis',
+            'note': None,
+            'explanation': None,
+        }
+
+    # -- exact-analysis (SPECS 13.1) -------------------------------------
+    def exact_analysis(self, execution_id):
+        self.exact_analysis_calls += 1
+        entry = next((t for t in self._tasks.values()
+                      if t['execution_id'] == execution_id), None)
+        if entry is None:
+            from odoo.addons.jaot_base.jaot_client import JaotAPIError
+            raise JaotAPIError('unknown execution')
+        meta = (entry['problem'].get('metadata') or {})
+        values = entry.get('values') or {}
+        days = meta.get('days', [])
+        orders = meta.get('orders', {})
+        capacity = meta.get('resource_capacity', 0.0)
+        constraints = []
+        for d in range(1, len(days) + 1):
+            activity = sum(
+                (values.get('q_%s_%d' % (oid, d)) or 0)
+                for oid, o in orders.items() if o['due_day'] >= d)
+            slack = round(capacity - activity, 9)
+            constraints.append({
+                'name': 'cap_%d' % d,
+                'activity': activity,
+                'rhs': capacity,
+                'operator': '<=',
+                'slack': slack,
+                'is_binding': abs(slack) < 1e-9,
+                'utilization': (activity / capacity) if capacity else 0.0,
+                'family': 'capacity',
+            })
+        for oid, o in orders.items():
+            constraints.append({
+                'name': 'deliver_%s' % oid,
+                'activity': o['qty'],
+                'rhs': o['qty'],
+                'operator': '=',
+                'slack': 0.0,
+                'is_binding': True,
+                'utilization': 1.0,
+                'family': 'delivery',
+            })
+        return {
+            'objective_value': self._objective(meta, values),
+            'total_constraints': len(constraints),
+            'binding_count': sum(
+                1 for c in constraints if c['is_binding']),
+            'constraints': constraints,
+            'computed': True,
+        }
 
     # -- objective -------------------------------------------------------
     @staticmethod

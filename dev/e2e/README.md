@@ -7,7 +7,7 @@ modules. One case per user flow; the runner exits `0` only when every case
 passes and writes per-case results (plus a screenshot per failure) to
 `dev/e2e/results/e2e_results.json` (git-ignored).
 
-## What it exercises (31 cases)
+## What it exercises (32 cases)
 
 **Connection management**
 - Manager login and navigation.
@@ -56,6 +56,9 @@ passes and writes per-case results (plus a screenshot per failure) to
   scenario is baselined against it (delta written), and what-if runs on the
   applied scenario; both scenarios are reverted afterwards.
 - Infeasible VRP solve (vehicle capacity below a picking's demand).
+- Plan explanation: a solved MRP scenario exposes the *Explanation* form
+  section — objective terms (setups / inventory holding) and the tightly
+  used constraints in plain language, no machine identifiers leaking.
 
 **Security (role/ACL controls)**
 - Viewer: reads a scenario, sees no manager action buttons, no expression

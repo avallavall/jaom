@@ -21,7 +21,8 @@ class FakeJaotClient:
 
     def __init__(self, solver_status='optimal', poll_status='completed',
                   model_values=None, scenario_analysis_job=None,
-                  solve_async_error=None):
+                  solve_async_error=None, exact_analysis=None,
+                  exact_analysis_error=None):
         self.solver_status = solver_status
         self.poll_status = poll_status
         self._fixed_model_values = model_values
@@ -33,10 +34,14 @@ class FakeJaotClient:
         self.infeasibility_calls = 0
         self.scenario_analysis_calls = 0
         self.scenario_analysis_get_calls = 0
+        self.exact_analysis_calls = 0
         self._scenario_analysis_job = scenario_analysis_job
+        self._exact_analysis = exact_analysis
         # when set, solve_async raises it (JAOT down / quota / solver error)
         self.solve_async_error = solve_async_error
         self.solve_async_calls = 0
+        # when set, exact_analysis raises it (analysis endpoint down)
+        self.exact_analysis_error = exact_analysis_error
 
     # -- submit / poll / cancel -----------------------------------------
     def solve_async(self, problem, solver_name=None, wait=False):
@@ -78,7 +83,60 @@ class FakeJaotClient:
 
     def infeasibility_analysis(self, execution_id):
         self.infeasibility_calls += 1
-        return {'constraints': [], 'note': 'fake IIS'}
+        return {
+            'iis_constraints': ['capacity'],
+            'iis_variable_bounds': [],
+            'conflict_type': 'constraint',
+            'method': 'iis',
+            'note': None,
+            'explanation': None,
+        }
+
+    # -- exact-analysis (SPECS 13.1) -------------------------------------
+    def exact_analysis(self, execution_id):
+        self.exact_analysis_calls += 1
+        if self.exact_analysis_error is not None:
+            raise self.exact_analysis_error
+        if self._exact_analysis is not None:
+            return self._exact_analysis
+        return self._default_exact()
+
+    def _default_exact(self):
+        """The exact-analysis of the greedy solution: the single
+        ``capacity`` constraint, binding exactly when the greedy fill
+        reaches it (contract shape, C-jaot-contract note §4)."""
+        values = (self._fixed_model_values
+                  if self._fixed_model_values is not None
+                  else self._greedy())
+        items = self._items()
+        capacity = self._capacity()
+        activity = sum(
+            float(items[k]['weight']) for k in items
+            if values.get('x_%s' % k))
+        slack = round(capacity - activity, 9)
+        is_binding = abs(slack) < 1e-9
+        return {
+            'objective_value': self._objective(values),
+            'total_constraints': 1,
+            'binding_count': 1 if is_binding else 0,
+            'constraints': [{
+                'name': 'capacity',
+                'activity': activity,
+                'rhs': capacity,
+                'operator': '<=',
+                'slack': slack,
+                'is_binding': is_binding,
+                'utilization': (activity / capacity) if capacity else 0.0,
+                'family': 'capacity',
+            }],
+            'contributions': [
+                {'label': 'x_%s' % k,
+                 'contribution': float(items[k]['value'])}
+                for k in sorted(items)
+                if values.get('x_%s' % k)
+            ],
+            'computed': True,
+        }
 
     # -- scenario-analysis (what-if, P4.3) --------------------------------
     def scenario_analysis(self, execution_id):

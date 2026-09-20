@@ -226,3 +226,43 @@ class TestVrpE2E(TransactionCase):
         self.assertTrue(lines[pickings[1].id].delta_vs_baseline)
         self.assertTrue(lines[pickings[2].id].delta_vs_baseline)
         self.assertFalse(lines[pickings[0].id].delta_vs_baseline)
+
+    def test_explanation_on_solve(self):
+        """SPECS 13.1: the solved scenario carries the manager-readable
+        explanation: the transport term per vehicle and the tight
+        constraints labelled with the record names (no machine
+        identifiers leak into the text)."""
+        self._ensure_config()
+        _warehouse, pickings, vehicle = self._dataset(n_orders=3)
+        sc = self._scenario()
+        fake = FakeVrpClient()
+        with self._patch_client(fake):
+            sc.action_submit()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        self.assertEqual(sc.state, 'solved')
+        self.assertTrue(fake.exact_analysis_calls)
+        self.assertTrue(sc.explanation)
+        exp = sc.explanation
+        self.assertEqual(exp['objective']['value'], sc.objective_value)
+        self.assertEqual(exp['objective']['sense'], 'minimize')
+        # one vehicle carries the whole tour: a single named term, the
+        # tour length (4-decimal rounding may differ from the solver's
+        # objective in the last decimals)
+        terms = exp['objective']['terms']
+        self.assertEqual(len(terms), 1)
+        self.assertEqual(terms[0]['name'], 'Vehicle %s' % vehicle.name)
+        self.assertAlmostEqual(terms[0]['value'], sc.objective_value,
+                               places=2)
+        # the three visit equalities are binding; the vehicle load is far
+        # from its limit, so the labelled tight constraints are the visits
+        labels = [b['label'] for b in exp['binding_constraints']]
+        self.assertEqual(len(labels), 3)
+        for p in pickings:
+            self.assertTrue(any(p.name in l for l in labels),
+                            'picking %s missing from the tight constraints'
+                            % p.name)
+        text = sc.explanation_text
+        self.assertIn('Objective value', text)
+        self.assertIn('Tightly used constraints:', text)
+        self.assertNotIn('visit_', text)
+        self.assertNotIn('capacity_', text)

@@ -217,3 +217,48 @@ class TestMrpE2E(TransactionCase):
         self.assertEqual(sc.solver_status, 'infeasible')
         self.assertTrue(sc.infeasibility)
         self.assertEqual(fake.infeasibility_calls, 1)
+        # SPECS 13.1: the IIS is summarised in plain language, mapped
+        # through the formulation to the records the manager sees
+        self.assertTrue(sc.explanation)
+        exp = sc.explanation
+        self.assertNotIn('objective', exp)
+        self.assertIn('No feasible plan', exp['infeasible_summary'])
+        # the machine names (cap_1, deliver_<id>) are mapped to labels
+        self.assertNotIn('cap_1', exp['infeasible_summary'])
+        self.assertIn('Production capacity', exp['infeasible_summary'])
+        self.assertIn('must be delivered in full', exp['infeasible_summary'])
+        self.assertIn('No feasible plan', sc.explanation_text)
+
+    def test_explanation_on_solve(self):
+        """SPECS 13.1: the solved scenario carries the manager-readable
+        explanation: the objective split into setups + holding and the
+        tight constraints labelled with the order names (no machine
+        identifiers leak into the text)."""
+        self._ensure_config()
+        productions = self._dataset()
+        sc = self._scenario()
+        fake = FakeMrpClient()
+        with self._patch_client(fake):
+            sc.action_submit()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        self.assertEqual(sc.state, 'solved')
+        self.assertTrue(fake.exact_analysis_calls)
+        self.assertTrue(sc.explanation)
+        exp = sc.explanation
+        self.assertEqual(exp['objective']['value'], sc.objective_value)
+        self.assertEqual(exp['objective']['sense'], 'minimize')
+        # the optimized plan has one setup per order, no holding
+        terms = {t['name']: t['value'] for t in exp['objective']['terms']}
+        self.assertEqual(terms, {'Setups': 1000.0,
+                                 'Inventory holding': 0.0})
+        # every delivery equality is binding and labelled by order name
+        labels = [b['label'] for b in exp['binding_constraints']]
+        for p in productions:
+            self.assertTrue(any(p.name in l for l in labels),
+                            'order %s missing from the tight constraints'
+                            % p.name)
+        text = sc.explanation_text
+        self.assertIn('Objective value', text)
+        self.assertIn('Tightly used constraints:', text)
+        self.assertNotIn('deliver_', text)
+        self.assertNotIn('cap_', text)

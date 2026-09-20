@@ -13,6 +13,7 @@ The ``metadata`` block carries the per-record data needed by
 """
 import math
 
+from odoo import _
 from odoo.addons.jaot_base.jaot_formulations import (
     JaotFormulation,
     register,
@@ -192,6 +193,11 @@ class Vrp(JaotFormulation):
             'order_model': self._ORDER_MODEL,
             'vehicle_field': self._VEHICLE_FIELD,
             'seq_field': self._SEQ_FIELD,
+            # records the plan explanation may refer to (SPECS 13.1)
+            'records': {
+                self._ORDER_MODEL: list(order_ids),
+                self._VEHICLE_MODEL: list(vehicle_ids),
+            },
         }
 
         problem = {
@@ -253,3 +259,74 @@ class Vrp(JaotFormulation):
                     'kpi_contribution': 0.0,
                 })
         return lines
+
+    # ------------------------------------------------------------------
+    # plan explanation (SPECS 13.1)
+    # ------------------------------------------------------------------
+    def explain_objective(self, problem, model_values, record_names=None):
+        meta = (problem.get('metadata', {}) or {})
+        orders = meta.get('orders', {})
+        vehicles = meta.get('vehicles', [])
+        depot = meta.get('depot', {})
+        if not orders or not vehicles:
+            return None
+        order_ids = sorted(orders, key=int)
+        n = len(order_ids)
+        # the same node order and 4-decimal rounding as ``formulate``
+        # (node 0 = depot), so the per-vehicle terms sum to the objective
+        nodes = [(depot.get('lat'), depot.get('lng'))] + [
+            (orders[oid]['lat'], orders[oid]['lng']) for oid in order_ids]
+        terms = []
+        for t in range(len(vehicles)):
+            total = 0.0
+            for i in range(n + 1):
+                for j in range(n + 1):
+                    if i != j and model_values.get(f'x_{t}_{i}_{j}'):
+                        total += round(
+                            self._haversine_km(*nodes[i], *nodes[j]), 4)
+            terms.append({
+                'name': self._vehicle_label(t, vehicles, record_names),
+                'value': total,
+            })
+        return terms
+
+    def _vehicle_label(self, t, vehicles, record_names):
+        name = None
+        if record_names:
+            name = record_names.get(
+                (self._VEHICLE_MODEL, int(vehicles[t])))
+        if name:
+            return _('Vehicle %(name)s', name=name)
+        return _('Vehicle %(n)d', n=t + 1)
+
+    def explain_constraint(self, name, problem, record_names=None):
+        meta = (problem.get('metadata', {}) or {})
+        orders = meta.get('orders', {})
+        order_ids = sorted(orders, key=int)
+        vehicles = meta.get('vehicles', [])
+        if name.startswith('visit_'):
+            try:
+                k = int(name.split('_', 1)[1])
+            except ValueError:
+                return None
+            if not 1 <= k <= len(order_ids):
+                return None
+            oid = order_ids[k - 1]
+            pname = None
+            if record_names:
+                pname = record_names.get((self._ORDER_MODEL, int(oid)))
+            picking = (_('Picking %(name)s', name=pname) if pname
+                       else _('A picking'))
+            return _('%(p)s must be visited exactly once', p=picking)
+        if name.startswith('capacity_'):
+            try:
+                t = int(name.split('_', 1)[1])
+            except ValueError:
+                return None
+            if not 0 <= t < len(vehicles):
+                return None
+            return _('%(v)s is at its load limit',
+                    v=self._vehicle_label(t, vehicles, record_names))
+        # flow / depot in-out / MTZ / baseline fixes: structural,
+        # nothing for a manager
+        return None

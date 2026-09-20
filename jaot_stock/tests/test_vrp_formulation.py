@@ -126,3 +126,56 @@ class TestVrpFormulation(TransactionCase):
                     and c['expression'].endswith('= 1')):
                 visited.add(int(c['expression'].split(' = ')[0].split('_')[3]))
         self.assertNotIn(3, visited)
+
+    # -- plan explanation (SPECS 13.1) ------------------------------------
+    def test_explain_objective_terms(self):
+        problem = Vrp().formulate(_snapshot(), {})
+        f = Vrp()
+        model_values = {
+            'x_0_0_1': 1, 'x_0_1_2': 1, 'x_0_2_3': 1, 'x_0_3_0': 1,
+        }
+        terms = f.explain_objective(problem, model_values)
+        # one vehicle -> one named term, the tour length (4-decimal
+        # rounding, the same one the objective expression uses)
+        self.assertEqual(len(terms), 1)
+        self.assertEqual(terms[0]['name'], 'Vehicle 1')
+        expected = (
+            round(f._haversine_km(40.40, -3.70, 40.41, -3.71), 4)
+            + round(f._haversine_km(40.41, -3.71, 40.42, -3.72), 4)
+            + round(f._haversine_km(40.42, -3.72, 40.43, -3.73), 4)
+            + round(f._haversine_km(40.43, -3.73, 40.40, -3.70), 4)
+        )
+        self.assertAlmostEqual(terms[0]['value'], expected, places=6)
+        # the vehicle's display name is used when available
+        names = {('fleet.vehicle', 100): 'Van 1'}
+        terms = f.explain_objective(problem, model_values, names)
+        self.assertEqual(terms[0]['name'], 'Vehicle Van 1')
+
+    def test_explain_constraint_labels(self):
+        problem = Vrp().formulate(_snapshot(), {})
+        f = Vrp()
+        names = {
+            ('stock.picking', 1): 'PICK0001',
+            ('fleet.vehicle', 100): 'Van 1',
+        }
+        self.assertEqual(
+            f.explain_constraint('visit_1', problem, names),
+            'Picking PICK0001 must be visited exactly once')
+        self.assertEqual(
+            f.explain_constraint('capacity_0', problem, names),
+            'Vehicle Van 1 is at its load limit')
+        # no display names -> the generic labels, still plain language
+        self.assertEqual(
+            f.explain_constraint('visit_2', problem, None),
+            'A picking must be visited exactly once')
+        self.assertEqual(
+            f.explain_constraint('capacity_0', problem, None),
+            'Vehicle 1 is at its load limit')
+        # structural constraints stay invisible
+        self.assertIsNone(f.explain_constraint('flow_0_1', problem, names))
+        self.assertIsNone(f.explain_constraint('mtz_0_1_2', problem, names))
+        self.assertIsNone(f.explain_constraint('depot_out_0', problem, names))
+        # out-of-range / unknown machine names degrade to None
+        self.assertIsNone(f.explain_constraint('visit_0', problem, names))
+        self.assertIsNone(f.explain_constraint('visit_9', problem, names))
+        self.assertIsNone(f.explain_constraint('capacity_3', problem, names))

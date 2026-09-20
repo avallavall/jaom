@@ -12,6 +12,7 @@ per-unit, per-day inventory-holding cost.
 Days are the distinct deadline dates present in the extracted orders —
 the only days on which a due order can usefully be produced.
 """
+from odoo import _
 from odoo.addons.jaot_base.jaot_formulations import (
     JaotFormulation,
     register,
@@ -141,6 +142,8 @@ class MrpLotSizing(JaotFormulation):
             'setup_cost': setup_cost,
             'holding_cost': holding_cost,
             'n_orders': n,
+            # records the plan explanation may refer to (SPECS 13.1)
+            'records': {self._ORDER_MODEL: list(order_ids)},
         }
 
         problem = {
@@ -201,3 +204,69 @@ class MrpLotSizing(JaotFormulation):
                 + holding_cost * held,
             })
         return lines
+
+    # ------------------------------------------------------------------
+    # plan explanation (SPECS 13.1)
+    # ------------------------------------------------------------------
+    def explain_objective(self, problem, model_values, record_names=None):
+        meta = (problem.get('metadata', {}) or {})
+        orders = meta.get('orders', {})
+        setup_cost = meta.get('setup_cost', 0.0)
+        holding_cost = meta.get('holding_cost', 0.0)
+        if not orders:
+            return None
+        setups = 0.0
+        holding = 0.0
+        for oid, o in orders.items():
+            for d in range(1, o['due_day'] + 1):
+                setups += setup_cost * (
+                    model_values.get(f'x_{oid}_{d}') or 0)
+                if d < o['due_day']:
+                    holding += holding_cost * (
+                        model_values.get(f'i_{oid}_{d}') or 0)
+        return [
+            {'name': _('Setups'), 'value': setups},
+            {'name': _('Inventory holding'), 'value': holding},
+        ]
+
+    def _order_label(self, oid, record_names):
+        name = None
+        if record_names:
+            name = record_names.get((self._ORDER_MODEL, int(oid)))
+        if name:
+            return _('Order %(name)s', name=name)
+        return _('An order')
+
+    def explain_constraint(self, name, problem, record_names=None):
+        meta = (problem.get('metadata', {}) or {})
+        days = meta.get('days', [])
+        orders = meta.get('orders', {})
+        if name.startswith('cap_'):
+            try:
+                d = int(name.split('_', 1)[1])
+            except ValueError:
+                return None
+            if not 1 <= d <= len(days):
+                return None
+            return _('Production capacity for %(day)s', day=days[d - 1])
+        if name.startswith('deliver_'):
+            oid = name.split('_', 1)[1]
+            o = orders.get(oid)
+            if o is None:
+                return None
+            return _('%(order)s must be delivered in full by %(day)s',
+                    order=self._order_label(oid, record_names),
+                    day=days[o['due_day'] - 1])
+        if name.startswith('fix_'):
+            parts = name.split('_')
+            if len(parts) != 3:
+                return None
+            oid, d = parts[1], int(parts[2])
+            o = orders.get(oid)
+            if o is None or o.get('start_day') != d:
+                return None
+            return _('%(order)s keeps its current start day %(day)s',
+                    order=self._order_label(oid, record_names),
+                    day=days[d - 1])
+        # bal / link: structural flow constraints, nothing for a manager
+        return None

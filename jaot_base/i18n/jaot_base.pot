@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0-20260908\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-20 08:33+0000\n"
-"PO-Revision-Date: 2026-09-20 08:33+0000\n"
+"POT-Creation-Date: 2026-09-20 17:25+0000\n"
+"PO-Revision-Date: 2026-09-20 17:25+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -417,6 +417,17 @@ msgstr ""
 #. module: jaot_base
 #: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
 msgid "Error / infeasibility"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__explanation
+#: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
+msgid "Explanation"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__explanation_text
+msgid "Explanation text"
 msgstr ""
 
 #. module: jaot_base
@@ -841,6 +852,14 @@ msgid "MRP"
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,help:jaot_base.field_jaot_scenario__explanation
+msgid ""
+"Manager-readable explanation of the result, filled at reconciliation (SPECS "
+"13.1): the objective decomposed into named terms, the tight constraints in "
+"plain language, or the infeasibility summary."
+msgstr ""
+
+#. module: jaot_base
 #: model:res.groups,comment:jaot_base.group_manager
 msgid ""
 "Manages configuration, recipes and bindings; can apply and revert scenarios "
@@ -900,6 +919,20 @@ msgstr ""
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "No applied changes to revert for this scenario."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "No feasible plan exists: the decision limits conflict with each other."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid ""
+"No feasible plan exists: these requirements conflict with each other: "
+"%(reqs)s."
 msgstr ""
 
 #. module: jaot_base
@@ -971,6 +1004,12 @@ msgstr ""
 #. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__objective_value
 msgid "Objective value"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Objective value %(v)s (%(s)s):"
 msgstr ""
 
 #. module: jaot_base
@@ -1430,6 +1469,12 @@ msgstr ""
 #. module: jaot_base
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Tightly used constraints:"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "Timed out before a JAOT task was recorded."
 msgstr ""
 
@@ -1519,4 +1564,16 @@ msgstr ""
 #. module: jaot_base
 #: model:ir.model.fields,help:jaot_base.field_jaot_scenario_whatif__status
 msgid "computed, infeasible, or SKIPPED_BUDGET (shown as a bound)."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "maximizing"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "minimizing"
 msgstr ""

@@ -31,6 +31,7 @@ class FakeVrpClient:
         self.poll_calls = 0
         self.cancelled = False
         self.infeasibility_calls = 0
+        self.exact_analysis_calls = 0
         self._next = 0
         self._tasks = {}  # task_id -> {'status', 'execution_id', 'problem'}
 
@@ -91,6 +92,7 @@ class FakeVrpClient:
                 values['x_0_%d_%d' % (a, b)] = 1
             for i in range(1, n + 1):
                 values['u_0_%d' % i] = i
+        entry['values'] = values
         return {
             'solver_status': self.solver_status,
             'solver_name': 'fake-cplex',
@@ -104,7 +106,97 @@ class FakeVrpClient:
 
     def infeasibility_analysis(self, execution_id):
         self.infeasibility_calls += 1
-        return {'constraints': [], 'note': 'fake IIS'}
+        entry = next((t for t in self._tasks.values()
+                      if t['execution_id'] == execution_id), None)
+        iis = []
+        if entry is not None:
+            problem = entry['problem']
+            fixes = [c for c in problem.get('constraints', [])
+                     if c['name'].startswith('fix_')]
+            orders = problem.get('metadata', {}).get('orders', {})
+            order_ids = sorted(orders, key=int)
+            fixed_nodes = set()
+            for c in fixes:
+                var = c['expression'].split(' = ')[0]
+                if var.startswith('x_'):
+                    _x, _t, i, j = var.split('_')
+                    if 1 <= int(i) <= len(order_ids):
+                        fixed_nodes.add(int(i))
+            for k in range(1, len(order_ids) + 1):
+                if k not in fixed_nodes:
+                    iis.append('visit_%d' % k)
+        return {
+            'iis_constraints': iis,
+            'iis_variable_bounds': [],
+            'conflict_type': 'constraint',
+            'method': 'iis',
+            'note': None,
+            'explanation': None,
+        }
+
+    # -- exact-analysis (SPECS 13.1) -------------------------------------
+    def exact_analysis(self, execution_id):
+        self.exact_analysis_calls += 1
+        entry = next((t for t in self._tasks.values()
+                      if t['execution_id'] == execution_id), None)
+        if entry is None:
+            from odoo.addons.jaot_base.jaot_client import JaotAPIError
+            raise JaotAPIError('unknown execution')
+        problem = entry['problem']
+        meta = problem.get('metadata', {})
+        values = entry.get('values') or {}
+        orders = meta.get('orders', {})
+        order_ids = sorted(orders, key=int)
+        n = len(order_ids)
+        vehicles = meta.get('vehicles', [])
+        constraints = []
+        # visit_k: equality constraints, always binding in a feasible tour
+        for k in range(1, n + 1):
+            constraints.append({
+                'name': 'visit_%d' % k,
+                'activity': 1.0,
+                'rhs': 1.0,
+                'operator': '=',
+                'slack': 0.0,
+                'is_binding': True,
+                'utilization': 1.0,
+                'family': 'visit',
+            })
+        # capacity_t: rhs parsed back out of the constraint expression
+        for t in range(len(vehicles)):
+            load = 0.0
+            for k in range(1, n + 1):
+                demand = orders[str(order_ids[k - 1])]['demand']
+                for i in range(n + 1):
+                    if i != k and values.get('x_%d_%d_%d' % (t, i, k)):
+                        load += demand
+            rhs = self._capacity_rhs(problem, t)
+            slack = round(rhs - load, 9)
+            constraints.append({
+                'name': 'capacity_%d' % t,
+                'activity': load,
+                'rhs': rhs,
+                'operator': '<=',
+                'slack': slack,
+                'is_binding': abs(slack) < 1e-9,
+                'utilization': (load / rhs) if rhs else 0.0,
+                'family': 'capacity',
+            })
+        return {
+            'objective_value': self._objective(problem, values),
+            'total_constraints': len(constraints),
+            'binding_count': sum(
+                1 for c in constraints if c['is_binding']),
+            'constraints': constraints,
+            'computed': True,
+        }
+
+    @staticmethod
+    def _capacity_rhs(problem, t):
+        for c in problem.get('constraints', []):
+            if c['name'] == 'capacity_%d' % t:
+                return float(c['expression'].rsplit('<=', 1)[1].strip())
+        return 0.0
 
     # -- objective -------------------------------------------------------
     def _objective(self, problem, values):

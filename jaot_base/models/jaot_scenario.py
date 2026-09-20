@@ -69,6 +69,15 @@ class JaotScenario(models.Model):
     infeasibility = fields.Json(
         string='Infeasibility analysis', copy=False,
         help='IIS result when the solve is infeasible (SPECS 4.4).')
+    explanation = fields.Json(
+        string='Explanation', copy=False,
+        help='Manager-readable explanation of the result, filled at '
+             'reconciliation (SPECS 13.1): the objective decomposed into '
+             'named terms, the tight constraints in plain language, or '
+             'the infeasibility summary.')
+    explanation_text = fields.Text(
+        string='Explanation text', compute='_compute_explanation_text',
+        readonly=True, copy=False)
     whatif_state = fields.Selection([
         ('none', 'None'),
         ('requested', 'Requested'),
@@ -105,6 +114,52 @@ class JaotScenario(models.Model):
     def _compute_line_count(self):
         for rec in self:
             rec.line_count = len(rec.scenario_line_ids)
+
+    @api.depends('explanation')
+    def _compute_explanation_text(self):
+        for rec in self:
+            rec.explanation_text = rec._render_explanation_text()
+
+    @staticmethod
+    def _fmt_num(value):
+        if value is None:
+            return '?'
+        return '%.2f' % value
+
+    def _render_explanation_text(self):
+        """The stored explanation Json as plain, manager-readable text
+        (SPECS 13.1, §7: no expressions or identifiers)."""
+        self.ensure_one()
+        exp = self.explanation
+        if not exp:
+            return ''
+        lines = []
+        obj = exp.get('objective') or {}
+        if obj:
+            sense = (_('minimizing') if obj.get('sense') == 'minimize'
+                     else _('maximizing'))
+            lines.append(_(
+                'Objective value %(v)s (%(s)s):',
+                v=self._fmt_num(obj.get('value')), s=sense))
+            for term in obj.get('terms') or []:
+                lines.append('  - %s: %s' % (
+                    term.get('name'),
+                    self._fmt_num(term.get('value'))))
+        binding = exp.get('binding_constraints') or []
+        if binding:
+            lines.append(_('Tightly used constraints:'))
+            for b in binding:
+                line = '  - %s' % b.get('label')
+                if b.get('activity') is not None and b.get('rhs') is not None:
+                    line += ' (%s / %s)' % (
+                        self._fmt_num(b.get('activity')),
+                        self._fmt_num(b.get('rhs')))
+                lines.append(line)
+        if exp.get('infeasible_summary'):
+            lines.append(exp['infeasible_summary'])
+        if exp.get('note'):
+            lines.append(exp['note'])
+        return '\n'.join(lines)
 
     @api.constrains('state', 'applied')
     def _check_applied_state(self):
@@ -507,11 +562,13 @@ class JaotScenario(models.Model):
 
     def _finalize_from_execution(self, config):
         self.ensure_one()
-        # a fresh solve invalidates any earlier what-if (P4.3)
+        # a fresh solve invalidates any earlier what-if (P4.3) and any
+        # earlier explanation (SPECS 13.1)
         self.whatif_state = 'none'
         self.whatif_analysis = False
         self.whatif_error = False
         self.whatif_line_ids.unlink()
+        self.explanation = False
         client = config.get_client()
         execution = client.execution(self.jaot_execution_id)
         solver_status = execution.get('solver_status')
@@ -527,6 +584,7 @@ class JaotScenario(models.Model):
                     self.jaot_execution_id)
             except JaotAPIError as exc:
                 self.infeasibility = {'note': str(exc)}
+            self.explanation = self._build_infeasible_explanation()
             self.jaot_error = _("Infeasible.")
             self.state = 'failed'
             self.message_post(body=_("Solve is infeasible (IIS captured)."))
@@ -561,12 +619,98 @@ class JaotScenario(models.Model):
                 1 for l in lines
                 if l['decision'].get('selected')),
         } if lines else None
+        self.explanation = self._build_explanation(
+            client, formula, model_values)
         self.state = 'solved'
         self.message_post(body=_("Solved: objective %(o)s (%(s)s).",
                                  o=self.objective_value,
                                  s=solver_status or '?'))
         if self.is_baseline and self.baseline_of_id:
             self._store_baseline_delta(self.baseline_of_id)
+
+    # ------------------------------------------------------------------
+    # plan explanation (SPECS 13.1)
+    # ------------------------------------------------------------------
+    def _explanation_record_names(self, problem):
+        """Display names of the records the formulation's explanation may
+        refer to (the ``records`` block of the request metadata)."""
+        self.ensure_one()
+        names = {}
+        refs = (problem.get('metadata') or {}).get('records') or {}
+        for res_model, ids in refs.items():
+            if res_model not in self.env:
+                continue
+            recs = self.env[res_model].sudo().browse(
+                [int(i) for i in ids if i is not None]).exists()
+            for rec in recs:
+                names[(res_model, rec.id)] = rec.display_name or str(rec.id)
+        return names
+
+    def _build_explanation(self, client, formula, model_values):
+        """The manager-readable explanation for a solved scenario: the
+        objective decomposed into named terms plus the tight constraints
+        from the exact-analysis in plain language. A failing
+        exact-analysis degrades the explanation, never the scenario."""
+        self.ensure_one()
+        problem = self.request_payload or {}
+        exact = {}
+        try:
+            exact = client.exact_analysis(self.jaot_execution_id) or {}
+        except JaotAPIError as exc:
+            exact = {'note': str(exc)}
+        names = self._explanation_record_names(problem)
+        terms = formula.explain_objective(problem, model_values, names)
+        binding = []
+        for c in exact.get('constraints') or []:
+            if not c.get('is_binding'):
+                continue
+            label = formula.explain_constraint(
+                c.get('name'), problem, names)
+            if label:
+                binding.append({
+                    'label': label,
+                    'activity': c.get('activity'),
+                    'rhs': c.get('rhs'),
+                    'slack': c.get('slack'),
+                })
+        explanation = {
+            'objective': {
+                'value': self.objective_value,
+                'sense': self.objective_sense,
+                'terms': terms or [],
+            },
+            'binding_constraints': binding,
+        }
+        if exact.get('note'):
+            explanation['note'] = exact['note']
+        return explanation
+
+    def _build_infeasible_explanation(self):
+        """A one-paragraph plain-language summary of the IIS: the
+        conflicting constraints mapped to the records they bind."""
+        self.ensure_one()
+        problem = self.request_payload or {}
+        formula = get_formulation(self.recipe_id.code)
+        iis = self.infeasibility or {}
+        names = self._explanation_record_names(problem)
+        parts = []
+        for cname in iis.get('iis_constraints') or []:
+            label = (formula.explain_constraint(cname, problem, names)
+                     if formula else None)
+            parts.append(label or str(cname))
+        if parts:
+            summary = _("No feasible plan exists: these requirements "
+                       "conflict with each other: %(reqs)s.",
+                       reqs=', '.join(parts))
+        else:
+            summary = _("No feasible plan exists: the decision limits "
+                       "conflict with each other.")
+        if iis.get('note'):
+            summary += ' (%s)' % iis['note']
+        return {
+            'infeasible_summary': summary,
+            'conflict_type': iis.get('conflict_type'),
+        }
 
     def _store_baseline_delta(self, parent):
         """Write the baseline-vs-optimized KPI delta onto the optimized

@@ -41,6 +41,29 @@ class JaotFormulation:
         """
         raise NotImplementedError
 
+    def explain_objective(self, problem, model_values, record_names=None):
+        """Decompose the objective into named terms (SPECS 13.1): pure
+        post-processing of the incumbent solution against the extracted
+        data — no solver call.
+
+        Returns a list of ``{'name': str, 'value': float}`` dicts whose
+        values sum to the objective, or ``None`` when the formulation has
+        no meaningful split. ``record_names`` (when provided) maps
+        ``(res_model, res_id)`` to a display name for the term labels.
+        """
+        return None
+
+    def explain_constraint(self, name, problem, record_names=None):
+        """Plain-language name for a constraint machine name as it comes
+        back from the JAOT exact-analysis (SPECS 13.1), e.g.
+        ``cap_2`` -> "Production capacity for 2026-10-06".
+
+        Returns the label string, or ``None`` for structural constraints
+        a manager should not see. ``record_names`` is as in
+        :meth:`explain_objective`.
+        """
+        return None
+
 
 _REGISTRY = {}
 

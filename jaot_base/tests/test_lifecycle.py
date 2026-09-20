@@ -10,6 +10,7 @@ from unittest import mock
 
 from odoo.tests import TransactionCase
 
+from ..jaot_client import JaotAPIError
 from ..models.jaot_config import JaotConfig
 from .common import FakeJaotClient, make_config, make_toys
 
@@ -96,6 +97,52 @@ class TestScenarioLifecycle(TransactionCase):
         self.assertEqual(sc.solver_status, 'infeasible')
         self.assertIsNotNone(sc.infeasibility)
         self.assertTrue(fake.infeasibility_calls)
+        # SPECS 13.1: the failed scenario carries the infeasibility
+        # explanation: a one-paragraph plain-language summary
+        self.assertTrue(sc.explanation)
+        exp = sc.explanation
+        self.assertNotIn('objective', exp)
+        self.assertTrue(exp['infeasible_summary'])
+        self.assertIn('No feasible plan', exp['infeasible_summary'])
+        self.assertIn('No feasible plan', sc.explanation_text)
+
+    def test_explanation_on_solve(self):
+        """SPECS 13.1: a solved scenario stores the explanation (the
+        objective block is always present; the toy knapsack has no named
+        objective split and no labelled tight constraints, so both lists
+        are empty but present)."""
+        sc = self._scenario()
+        fake = FakeJaotClient()
+        with self._patch_client(fake):
+            sc.action_submit()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        self.assertEqual(sc.state, 'solved')
+        self.assertTrue(fake.exact_analysis_calls)
+        self.assertTrue(sc.explanation)
+        exp = sc.explanation
+        self.assertEqual(exp['objective']['value'], sc.objective_value)
+        self.assertEqual(exp['objective']['sense'], 'maximize')
+        self.assertEqual(exp['objective']['terms'], [])
+        self.assertEqual(exp['binding_constraints'], [])
+        # the rendered text is plain language for a manager
+        self.assertIn('Objective value', sc.explanation_text)
+        self.assertIn('maximizing', sc.explanation_text)
+
+    def test_explanation_degrades_when_analysis_fails(self):
+        """A failing exact-analysis degrades the explanation (a note),
+        never the scenario."""
+        sc = self._scenario()
+        fake = FakeJaotClient(exact_analysis_error=JaotAPIError(
+            503, 'unavailable', 'analysis down'))
+        with self._patch_client(fake):
+            sc.action_submit()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        self.assertEqual(sc.state, 'solved')  # the scenario still solves
+        self.assertTrue(sc.explanation)
+        self.assertEqual(sc.explanation['objective']['value'],
+                         sc.objective_value)
+        self.assertIn('analysis down', sc.explanation['note'])
+        self.assertIn('analysis down', sc.explanation_text)
 
     def test_submit_only_from_draft(self):
         from odoo.exceptions import UserError
