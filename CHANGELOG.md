@@ -2,6 +2,15 @@
 
 All user-facing changes, newest first. One to three lines per entry.
 
+## Unreleased
+
+- Fix: the JAOT connection form now works for a manager without
+  system-admin rights — saving, testing, and clearing the API key,
+  recipe validation, and scenario solving no longer fail on the
+  manager role.
+- Apply and Revert now ask for confirmation before writing or
+  restoring records.
+
 ## 1.0.0 (2026-09-20)
 
 First public release.
