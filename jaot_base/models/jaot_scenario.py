@@ -160,13 +160,17 @@ class JaotScenario(models.Model):
 
         for binding in bindings:
             role = binding.role_id
+            # expression is group_system-gated for UI exposure, but the
+            # server-side extraction must read it regardless of the
+            # caller's access level (managers submit scenarios).
+            expression = binding.sudo().expression
             binding_snapshot.append({
                 'role': role.name,
                 'kind': role.kind,
                 'res_model': binding.res_model,
                 'field_path': binding.field_path,
                 'domain': binding.domain,
-                'expression': binding.expression,
+                'expression': expression,
                 'constant_value': binding.constant_value,
             })
             if role.kind == 'parameter':
@@ -192,7 +196,7 @@ class JaotScenario(models.Model):
                 vals = self._resolve_path(records, binding.field_path)
             else:
                 vals = list(records.ids)
-            if binding.expression:
+            if expression:
                 resolved = []
                 for rec, _v in zip(records, vals):
                     values = {'id': rec.id}
@@ -203,7 +207,7 @@ class JaotScenario(models.Model):
                         except Exception:
                             pass
                     resolved.append(evaluate(
-                        binding.expression, values,
+                        expression, values,
                         context=f"{binding.res_model}:{role.name}"))
                 vals = resolved
             target = snapshot.setdefault(binding.res_model, {})

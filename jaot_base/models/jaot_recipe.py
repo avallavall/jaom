@@ -36,10 +36,13 @@ class JaotRecipe(models.Model):
         """Syntax-check every binding's domain and expression (SPECS 5.4)."""
         self.ensure_one()
         for binding in self.binding_ids:
-            if binding.domain:
-                validate_domain(binding.domain)
-            if binding.expression:
-                validate_expression(binding.expression)
+            # expression is group_system-gated for UI exposure; the
+            # manager-gated Validate button must still be able to check it.
+            privileged = binding.sudo()
+            if privileged.domain:
+                validate_domain(privileged.domain)
+            if privileged.expression:
+                validate_expression(privileged.expression)
         return {
             'type': 'ir.actions.client',
             'params': {

@@ -64,7 +64,9 @@ class JaotConfig(models.Model):
 
     @api.depends('company_id')
     def _compute_api_key(self):
-        icp = self.env['ir.config_parameter']
+        # The key lives in a system parameter that non-admins cannot read
+        # directly; the compute must not depend on the caller's ACL.
+        icp = self.env['ir.config_parameter'].sudo()
         for rec in self:
             key = icp.get_param(self._api_key_param(rec.company_id.id)) \
                 if rec.company_id else False
@@ -85,7 +87,11 @@ class JaotConfig(models.Model):
             if key:
                 company_id = vals.get('company_id') \
                     or self.env.company.id
-                self.env['ir.config_parameter'].set_param(
+                # Scoped system-parameter write; the manager setting the
+                # key through this form is not a system admin, so the
+                # write must not depend on the caller's ir.config_parameter
+                # ACL.
+                self.env['ir.config_parameter'].sudo().set_param(
                     self._api_key_param(company_id), key)
                 stored = True
         recs = super().create(vals_list)
@@ -101,7 +107,7 @@ class JaotConfig(models.Model):
             vals = dict(vals)
             vals.pop('api_key_input', None)
             if key:
-                self.env['ir.config_parameter'].set_param(
+                self.env['ir.config_parameter'].sudo().set_param(
                     self._api_key_param(self.company_id.id), key)
                 self.invalidate_recordset(
                     ['api_key_set', 'api_key_masked'])
@@ -110,7 +116,7 @@ class JaotConfig(models.Model):
 
     def action_clear_api_key(self):
         self.ensure_one()
-        self.env['ir.config_parameter'].set_param(
+        self.env['ir.config_parameter'].sudo().set_param(
             self._api_key_param(self.company_id.id), False)
         self.invalidate_recordset(['api_key_set', 'api_key_masked'])
         self.message_post(body=_("API key removed."))
@@ -137,7 +143,7 @@ class JaotConfig(models.Model):
         """Build the HTTP client for this connection (SPECS §6.1: Bearer
         key, per-company instance)."""
         self.ensure_one()
-        icp = self.env['ir.config_parameter']
+        icp = self.env['ir.config_parameter'].sudo()
         key = icp.get_param(self._api_key_param(self.company_id.id))
         if not key:
             raise UserError(_(
