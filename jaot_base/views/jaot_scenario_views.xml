@@ -17,10 +17,12 @@
                     <button name="action_apply" type="object" string="Apply"
                             class="btn-primary"
                             invisible="state != 'solved'"
+                            confirm="Apply this solution? Decision values will be written to the Odoo records."
                             groups="jaot_base.group_manager"/>
                     <button name="action_revert" type="object" string="Revert"
                             class="btn-secondary"
                             invisible="state != 'applied'"
+                            confirm="Revert this applied solution? Records will be restored to their pre-apply values."
                             groups="jaot_base.group_manager"/>
                     <button name="action_compare_baseline" type="object"
                             string="Compare with baseline" class="btn-secondary"

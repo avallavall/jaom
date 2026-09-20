@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0-20260908\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-19 21:31+0000\n"
-"PO-Revision-Date: 2026-09-19 21:31+0000\n"
+"POT-Creation-Date: 2026-09-20 06:44+0000\n"
+"PO-Revision-Date: 2026-09-20 06:44+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -132,6 +132,12 @@ msgstr ""
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__apply_log_ids
 #: model:ir.ui.menu,name:jaot_base.menu_jaot_apply_log
 msgid "Apply Log"
+msgstr ""
+
+#. module: jaot_base
+#: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
+msgid ""
+"Apply this solution? Decision values will be written to the Odoo records."
 msgstr ""
 
 #. module: jaot_base
@@ -1182,6 +1188,13 @@ msgstr ""
 #. module: jaot_base
 #: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
 msgid "Revert"
+msgstr ""
+
+#. module: jaot_base
+#: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
+msgid ""
+"Revert this applied solution? Records will be restored to their pre-apply "
+"values."
 msgstr ""
 
 #. module: jaot_base
