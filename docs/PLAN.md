@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v1.0-rc — 2026-09-20 (Phase 4 complete except P4.5 — file the upstream JAOT issue, blocked(external): the maintainer's GitHub account; Phase 5 complete: P5.1–P5.6 done, P5.7 gate **PASSED** — all four CI jobs green locally, evidence in `docs/ci.md`; Phase 6: P6.1 `jaot_mrp` done — the second domain at the same quality bar, 14 tests green in the 5 620-test run; next: Phase 7 packaging (README + changelog + fresh-install smoke) and P8.1)
+**Status:** v1.0 — 2026-09-20 (Phase 4 complete except P4.5 — blocked(external): filing the upstream JAOT issue is the maintainer's GitHub account; Phase 5 complete: P5.1–P5.6 done, P5.7 gate **PASSED** — all four CI jobs green locally, evidence in `docs/ci.md`; Phase 6: P6.1 `jaot_mrp` done — the second domain at the same quality bar, 14 tests green in the 5 620-test run; Phase 7 complete except P7.2 — blocked(external): the public store listing is the maintainer's call; P8.1 done: local tag `v1.0.0` + changelog. Remaining external items: P4.5, P7.2, any `git push` / announcement, first external user live)
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -66,6 +66,11 @@ who verifies).
 | P5.6 | CI (GitHub Actions, 4 jobs): lint (ruff 0.15.6 pinned), tests (offline; two core tests excluded, both verified against the image — `base:TestCommand` resolves `odoo-bin` relative to the test file, which breaks in the Debian-packaged `odoo:19.0` image; `account_edi_ubl_cii` `test_invoice_deferred_dates` writes a field that only exists with the Turkish e-invoice l10n), contract-smoke (pinned JAOT `c5a07e2`, frozen field names), i18n (committed pots must match the code). All four jobs verified locally | done | 2026-09-20 | 1e3773c |
 | P5.7 | GATE ⛔: CI green from a clean checkout, SPECS §10 targets documented — **PASSED**: all four jobs run locally against the pinned inputs — lint pass; tests 0 failed / 0 errors of 5 620 on a fresh database (30 min 11 s); contract-smoke PASS against the live pinned JAOT stack; i18n regenerate + content check pass. SPECS §10 targets in `docs/PERF.md` | done | 2026-09-20 | e4ef74f |
 | P6.1 | `jaot_mrp` — production scheduling: single-machine capacitated lot-sizing over `mrp.production` (confirmed/planned orders with deadlines; days = distinct deadline dates; x/q/i variables; bal/deliver/link/cap constraints; setup + holding objective). Baseline fix-all pins x to the incumbent start days; an infeasible incumbent is a finding. Cost parameters from parameter bindings (Community has no standard source, P1.2 F1). 14 tests green offline (fake client) | done | 2026-09-20 | c87f9af |
+| P7.1 | README — install, per-company connection (masked key), first solve per bridge, routing + MRP bridge docs, security model | done | 2026-09-20 | 5b2c0af |
+| P7.2 | Distribution channel — in-repo artifacts complete (LGPL-3 `LICENSE`, manifest metadata, README); the public store listing is the maintainer's call | blocked(external) | 2026-09-20 | — |
+| P7.3 | Versioning + changelog — `CHANGELOG.md` 1.0.0 entry (1–3 user-facing lines) | done | 2026-09-20 | 5b2c0af |
+| P7.4 | Fresh-install smoke — clean DB on the pinned image, public docs only, live pinned JAOT: install 51 s (74 modules), connection → SCIP solve (500.0) → baseline (575.0, delta 75.0) → apply → revert → staleness, ~1.5 min total (< 30 min target) — `docs/smoke.md` | done | 2026-09-20 | 5b2c0af |
+| P8.1 | First public version — local tag `v1.0.0`, changelog committed; the announcement (repo + P7.2 channel) and any push are the maintainer's | done | 2026-09-20 | — (local tag) |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
 
