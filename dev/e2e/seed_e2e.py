@@ -31,9 +31,17 @@ viewer_groups = [
     env.ref('base.group_user').id,
     env.ref('jaot_base.group_user').id,
 ]
+admin_groups = [
+    env.ref('base.group_user').id,
+    env.ref('base.group_system').id,
+    env.ref('base.group_multi_company').id,
+]
 for login, name, groups in [
     ('jaotmgr', 'E2E Manager', mgr_groups),
     ('jaotview', 'E2E Viewer', viewer_groups),
+    # System admin: positive control for the group_system-only fields
+    # (expression column, JAOT identifiers, payloads tab).
+    ('e2eadmin', 'E2E Admin', admin_groups),
 ]:
     user = env['res.users'].search([('login', '=', login)], limit=1)
     if not user:
