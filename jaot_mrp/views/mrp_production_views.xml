@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The scenario that last wrote the scheduling fields, shown on the
+         production order form (PLAN P6.1). -->
+    <record id="view_mrp_production_form_jaot" model="ir.ui.view">
+        <field name="name">mrp.production.form.jaot</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="JAOT scheduling">
+                    <field name="jaot_scenario_id"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

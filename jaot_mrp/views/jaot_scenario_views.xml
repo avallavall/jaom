@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Scenario UI (list + form with states, Apply/Revert, KPI and the
+         line diff) already lives in jaot_base; this makes the scheduling
+         scenarios reachable from the Manufacturing area (PLAN P6.1). -->
+    <record id="action_jaot_scenario_mrp" model="ir.actions.act_window">
+        <field name="name">Scheduling scenarios</field>
+        <field name="res_model">jaot.scenario</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('recipe_id.code', '=', 'mrp')]</field>
+        <field name="help" type="html">
+            <p class="o_view_no_content_smallest">
+                Create a scheduling scenario over the production orders,
+                solve it, review the start dates, then apply it.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_jaot_scenario_mrp"
+              name="Scheduling scenarios"
+              parent="mrp.menu_mrp_root"
+              action="action_jaot_scenario_mrp"
+              sequence="90"/>
+</odoo>

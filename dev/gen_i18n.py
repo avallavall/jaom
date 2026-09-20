@@ -13,7 +13,7 @@ import odoo.addons.jaot_base as _jb
 import odoo.tools.translate as tr
 
 SOURCE_LANG = 'en_US'
-MODULES = ['jaot_base', 'jaot_stock']
+MODULES = ['jaot_base', 'jaot_stock', 'jaot_mrp']
 # repo root = the parent of the loaded jaot_base package
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(_jb.__file__)))
 

@@ -33,12 +33,16 @@ def main():
         return 1
     failed = False
     for pot in pots:
-        # bytes, not text=True: the runner's locale (e.g. cp1252 on
-        # Windows) would mangle the UTF-8 .pot contents on decode.
-        head = subprocess.run(
-            ['git', 'show', f'HEAD:{pot.as_posix()}'],
-            capture_output=True, check=True).stdout.decode('utf-8')
         fresh = pot.read_text(encoding='utf-8')
+        # A template with no committed version yet is new in this commit
+        # cycle: nothing to drift from, so report it and move on.
+        try:
+            head = subprocess.run(
+                ['git', 'show', f'HEAD:{pot.as_posix()}'],
+                capture_output=True, check=True).stdout.decode('utf-8')
+        except subprocess.CalledProcessError:
+            print(f'NEW  {pot.as_posix()} (not in HEAD yet)')
+            continue
         if normalize(head) == normalize(fresh):
             print(f'OK   {pot.as_posix()}')
             continue

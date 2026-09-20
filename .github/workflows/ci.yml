@@ -46,17 +46,25 @@ jobs:
       - uses: actions/checkout@v4
       - name: Start the CI stack
         run: docker compose -f .github/ci.yml up -d db
-      # ``-base:TestCommand``: the core test_cli class spawns
-      # ``odoo-bin <subcommand>`` and resolves the binary path relative to
-      # the test file — a layout that only exists in a source checkout, not
-      # in the Debian-packaged odoo:19.0 image, so the class errors there
-      # 100%-reproducibly (verified locally against the image).
-      # Everything else in base runs.
+      # Two core tests of the pinned odoo:19.0 image are excluded, and
+      # nothing else (verified against the image with TagsSelector):
+      # - ``-base:TestCommand``: the test_cli class spawns
+      #   ``odoo-bin <subcommand>`` and resolves the binary path relative
+      #   to the test file — a layout that only exists in a source
+      #   checkout, not in the Debian-packaged image (binary at
+      #   /usr/bin), so the class errors there 100%-reproducibly.
+      # - ``-account_edi_ubl_cii:CiiExportFacturXFR.test_invoice_deferred_dates``:
+      #   writes ``deferred_start_date`` on ``account.move.line``, a field
+      #   that only exists with ``l10n_tr_nilvera_einvoice`` installed.
+      #   Sibling tests in the class guard with ``ensure_installed``; this
+      #   one does not — an upstream bug in the pinned image.
+      # Everything else, including all other base tests, runs.
       - name: Run the Odoo test suite (offline, fake JAOT client)
         run: >
           docker compose -f .github/ci.yml run --rm odoo odoo
-          -d ci --stop-after -i stock,delivery,fleet,jaot_base,jaot_stock
-          --test-enable --test-tags '-base:TestCommand'
+          -d ci --stop-after -i stock,delivery,fleet,mrp,jaot_base,jaot_stock,jaot_mrp
+          --test-enable
+          --test-tags '-base:TestCommand,-account_edi_ubl_cii:CiiExportFacturXFR.test_invoice_deferred_dates'
       - name: Teardown
         if: always()
         run: docker compose -f .github/ci.yml down -v
@@ -112,7 +120,7 @@ jobs:
       - name: Install the addons
         run: >
           docker compose -f .github/ci.yml run --rm odoo odoo
-          -d i18n --stop-after -i stock,delivery,fleet,jaot_base,jaot_stock
+          -d i18n --stop-after -i stock,delivery,fleet,mrp,jaot_base,jaot_stock,jaot_mrp
       - name: Regenerate the .pot templates into the checkout
         run: |
           docker compose -f .github/ci.yml run --rm odoo \

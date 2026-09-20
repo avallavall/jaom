@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Default production-scheduling recipe for the default company
+         (PLAN P6.1). Multi-company installs add a per-company recipe from
+         the UI; the base module is the owner of the recipe/role/binding
+         models. -->
+    <record id="recipe_mrp" model="jaot.recipe">
+        <field name="name">Production scheduling (lot sizing)</field>
+        <field name="code">mrp</field>
+        <field name="domain">mrp</field>
+        <field name="company_id" ref="base.main_company"/>
+        <field name="description">Capacitated lot sizing over mrp.production deadlines. Orders = confirmed/planned production orders with a deadline; days = the distinct deadline dates; objective = per-lot setup cost + per-unit per-day inventory holding, subject to a daily capacity.</field>
+    </record>
+
+    <!-- ============ roles ============ -->
+    <record id="role_mrp_order_qty" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="name">order_qty</field>
+        <field name="kind">variable</field>
+        <field name="data_type">quantity</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Quantity to produce (product_qty).</field>
+    </record>
+    <record id="role_mrp_order_due" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="name">order_due</field>
+        <field name="kind">variable</field>
+        <field name="data_type">date</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Deadline to have the order produced (date_deadline, from the finished move).</field>
+    </record>
+    <!-- Incumbent (current) plan, read back for the fix-all baseline
+         (SPECS 4.6). Not required: a fresh order has no current plan yet,
+         and the baseline then reports it as an infeasibility finding. -->
+    <record id="role_mrp_current_start" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="name">current_start</field>
+        <field name="kind">variable</field>
+        <field name="data_type">date</field>
+        <field name="required" eval="False"/>
+        <field name="semantics">Current planned start date (date_start, the incumbent plan used to build the baseline).</field>
+    </record>
+    <!-- No standard per-day capacity / cost fields in Community: constant
+         parameter bindings, per the P1.2 finding F1 pattern (the VRP
+         vehicle capacity is bound the same way). -->
+    <record id="role_mrp_resource_capacity" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="name">resource_capacity</field>
+        <field name="kind">parameter</field>
+        <field name="data_type">number</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Units producible per day on the (single) machine.</field>
+    </record>
+    <record id="role_mrp_setup_cost" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="name">setup_cost</field>
+        <field name="kind">parameter</field>
+        <field name="data_type">number</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Cost of starting a lot (per order-day).</field>
+    </record>
+    <record id="role_mrp_holding_cost" model="jaot.recipe.role">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="name">holding_cost</field>
+        <field name="kind">parameter</field>
+        <field name="data_type">number</field>
+        <field name="required" eval="True"/>
+        <field name="semantics">Cost per unit held per day before the deadline.</field>
+    </record>
+
+    <!-- ============ default bindings (default company) ============ -->
+    <record id="binding_mrp_order_qty" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="role_id" ref="role_mrp_order_qty"/>
+        <field name="res_model">mrp.production</field>
+        <field name="field_path">product_qty</field>
+        <field name="domain">[("state", "in", ("confirmed", "planned")), ("date_deadline", "!=", False)]</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_mrp_order_due" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="role_id" ref="role_mrp_order_due"/>
+        <field name="res_model">mrp.production</field>
+        <field name="field_path">date_deadline</field>
+        <field name="domain">[("state", "in", ("confirmed", "planned")), ("date_deadline", "!=", False)]</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_mrp_current_start" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="role_id" ref="role_mrp_current_start"/>
+        <field name="res_model">mrp.production</field>
+        <field name="field_path">date_start</field>
+        <field name="domain">[("state", "in", ("confirmed", "planned")), ("date_deadline", "!=", False)]</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_mrp_resource_capacity" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="role_id" ref="role_mrp_resource_capacity"/>
+        <field name="constant_value">800.0</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_mrp_setup_cost" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="role_id" ref="role_mrp_setup_cost"/>
+        <field name="constant_value">250.0</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_mrp_holding_cost" model="jaot.binding">
+        <field name="recipe_id" ref="recipe_mrp"/>
+        <field name="role_id" ref="role_mrp_holding_cost"/>
+        <field name="constant_value">0.5</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+</odoo>

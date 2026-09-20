@@ -1,0 +1,66 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* jaot_mrp
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0-20260908\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-19 23:16+0000\n"
+"PO-Revision-Date: 2026-09-19 23:16+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: jaot_mrp
+#: model_terms:ir.actions.act_window,help:jaot_mrp.action_jaot_scenario_mrp
+msgid ""
+"Create a scheduling scenario over the production orders,\n"
+"                solve it, review the start dates, then apply it."
+msgstr ""
+
+#. module: jaot_mrp
+#: model:ir.model.fields,field_description:jaot_mrp.field_mrp_production__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: jaot_mrp
+#: model:ir.model.fields,field_description:jaot_mrp.field_mrp_production__id
+msgid "ID"
+msgstr ""
+
+#. module: jaot_mrp
+#: model:ir.model.fields,field_description:jaot_mrp.field_mrp_production__jaot_scenario_id
+msgid "JAOT scenario"
+msgstr ""
+
+#. module: jaot_mrp
+#: model_terms:ir.ui.view,arch_db:jaot_mrp.view_mrp_production_form_jaot
+msgid "JAOT scheduling"
+msgstr ""
+
+#. module: jaot_mrp
+#: model:ir.model,name:jaot_mrp.model_mrp_production
+msgid "Manufacturing Order"
+msgstr ""
+
+#. module: jaot_mrp
+#: model:jaot.recipe,name:jaot_mrp.recipe_mrp
+msgid "Production scheduling (lot sizing)"
+msgstr ""
+
+#. module: jaot_mrp
+#: model:ir.actions.act_window,name:jaot_mrp.action_jaot_scenario_mrp
+#: model:ir.ui.menu,name:jaot_mrp.menu_jaot_scenario_mrp
+msgid "Scheduling scenarios"
+msgstr ""
+
+#. module: jaot_mrp
+#: model:ir.model.fields,help:jaot_mrp.field_mrp_production__jaot_scenario_id
+msgid ""
+"The last scenario whose applied solution wrote the start date for this "
+"production order."
+msgstr ""
