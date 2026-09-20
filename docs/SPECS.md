@@ -1,10 +1,11 @@
 # JAOM — Specification
 
 **Project:** JAOM — Just Another Optimization Module (Odoo)
-**Status:** Draft v0.6 — 2026-09-11 (Phase 0 fully answered by the
-maintainer — §3.3, including Q1: LGPL-3; kickoff brief imported into the
-repo; Odoo 19 terrain verified at doc/source level and live —
-`docs/research/A-odoo-terrain.md`)
+**Status:** Draft v0.7 — 2026-09-20 (v1.1 scope added — §13, Phase 9:
+explanation, named scenarios, es translation, intraday re-optimization,
+forecast + safety stock. Phase 0 fully answered by the maintainer — §3.3,
+including Q1: LGPL-3; kickoff brief imported into the repo; Odoo 19 terrain
+verified at doc/source level and live — `docs/research/A-odoo-terrain.md`)
 **Supersedes:** nothing (first spec). Operationalizes the kickoff brief
 `jaot-odoo-brief.md` (2026-07-29, kept in this directory).
 **Companion document:** `PLAN.md` (phases, tasks, execution protocol).
@@ -451,3 +452,120 @@ See §4.6: fix-all-variables re-solve (no native evaluate-only in v3.9.0).
   JAOT adopts it, JAOM is unaffected (the adapter boundary is inside JAOT).
 - `jaot/docs/ROADMAP.md` — JAOM listed there as an official "Later /
   Exploring" item.
+
+## 13. v1.1 scope — Phase 9 (added 2026-09-20)
+
+Five features, selected 2026-09-20 from market + academic research
+(`docs/research/D-v11-scope.md`) plus the v2 backlog. All build on machinery
+that already exists (exact-analysis, IIS, batch re-solve, baseline fix-all,
+role bindings); D1 (no solver in Odoo) holds; no new external dependencies.
+The Q3 privacy question and the v2 items (§2.2) are untouched.
+
+### 13.1 Plan explanation (P9.1)
+
+Answer "why did the solver plan it this way?" for a non-technical user, on
+every solved scenario (both bridges):
+
+- **Objective decomposition** — the objective value split into named terms
+  (MRP: setup / holding; VRP: transport, plus any penalty terms), computed as
+  pure post-processing of the incumbent solution against the extracted data —
+  no solver call.
+- **Binding-constraint report** — from the JAOT `exact-analysis` already
+  fetched (§6.2 step 4): the tight constraints, with slack and a
+  plain-language name ("capacity of 2026-10-05 is fully used", "vehicle 12 is
+  at capacity").
+- **Infeasible cases** — the existing IIS plus a one-paragraph plain-language
+  summary mapping the conflicting constraints to user-visible
+  records/fields.
+- **Storage/UI** — `jaot.scenario.explanation` (Json, filled at
+  reconciliation) + a read-only explanation section on the scenario form.
+  Manager-readable; no expressions or identifiers (§7).
+- **Upstream note:** LP-relaxation shadow prices / ranging would strengthen
+  this (HiGHS exposes ranging natively) but need a JAOT endpoint; it is a
+  follow-up to avallavall/jaot#3, not implemented here.
+
+### 13.2 Named scenario runner (P9.2)
+
+Productize the what-if: user-defined named cases with parallel re-solves and
+a side-by-side comparison.
+
+- **Model** `jaot.scenario.case`: `name`, `scenario_id` (the solved parent),
+  `perturbation` (Json: list of `{role_id, mode: set|scale, value}`),
+  `state` (mirrors the child run), `case_run_id` (the child scenario actually
+  submitted).
+- **Mechanism** — a case runs as a normal child scenario: the parent's
+  binding snapshot with the perturbation applied to the **parameter roles**,
+  then the standard submit/reconcile path. Levers that are not parameter
+  roles (e.g. fleet size) require a parameter role on the recipe — v1.1
+  adds `max_vehicles` to the VRP recipe; MRP keeps its existing capacity /
+  setup / holding roles.
+- **Parallelism** — each case is an independent scenario/task (the cron
+  already polls them independently); at most `max_parallel_cases` (default
+  8) open per company, enforced at submit.
+- **Comparison view** — table across cases: objective, gap, solve time, KPI
+  summary, per-line delta vs the parent's baseline; time-limited rows remain
+  bounds (§4.6).
+
+### 13.3 es translation + i18n completion (P9.3)
+
+The day-one promise (§10.5: "en + es from day one") shipped as `.pot`
+templates only. v1.1 delivers `es.po` for `jaot_base`, `jaot_stock`,
+`jaot_mrp` with full msgstr coverage, and the CI i18n job is extended to
+check each `.po` against its `.pot` (msgid parity), so drift fails the build.
+
+### 13.4 Intraday re-optimization (P9.4, routing)
+
+Re-route when orders change after routes were issued, without disturbing
+what is already done.
+
+- **Trigger** — on an applied routing scenario, when the staleness check
+  reports changed source pickings, a **Re-optimize** action appears.
+- **Served legs are pinned** — pickings with `state = done` keep their
+  vehicle + position (fixed in the formulation, same machinery as the
+  baseline fix-all path, §4.6); the remaining pickings are re-optimized.
+- **Delta vs the frozen plan** — the re-route scenario stores its KPI delta
+  against the applied plan (reuses the baseline machinery), so the user sees
+  what the changes cost or save.
+- **Apply** writes only the changed pickings (existing per-line engine);
+  audit + revert unchanged (§4.5). Cancellations and new pickings go through
+  the same action (the extraction domain already covers confirmed/assigned
+  outgoing pickings).
+
+### 13.5 Forecast + safety stock for MRP (P9.5)
+
+Demand-side value: per-product forecasts feeding the lot-sizing demand.
+
+- **New bridge** `jaot_forecast` (depends: `jaot_base`, `stock`;
+  auto_install).
+- **Models** — `jaot.forecast` (product_id, company_id, method, adi,
+  abc_class, horizon, point + quantile values, backtest accuracy, run
+  timestamp) and `jaot.forecast.demand` (one row per product × period:
+  quantity at the chosen quantile) — the latter is what the MRP binding
+  reads, so the forecast plugs into the existing role machinery with zero
+  special cases.
+- **Method** — item classification by ADI (average inter-demand interval,
+  default 24-month window from `stock.move`) and ABC (usage value, default
+  80/15/5); ADI below the intermittent threshold (default 1.32) → ETS
+  (Holt); otherwise Croston/SBA with the (1 − β/2) bias correction.
+  Quantiles via normal approximation of the smoothed error; backtest
+  accuracy (MAPE, bias) over a holdout tail so a planner can audit the
+  numbers.
+- **Safety stock** — from the chosen service level (default 95 %): the
+  quantile of demand over the effective lead time; shown on the forecast and
+  included in the `jaot.forecast.demand` rows. Not written onto
+  `product.product` (Odoo Community has no standard field for it).
+- **MRP hook** — the lot-sizing recipe gains an **optional** role
+  `forecast_demand` (bound by default to `jaot.forecast.demand`); when the
+  role is bound, daily demand = committed MO quantities + forecast
+  quantities; unbound → exactly today's behavior. Refresh is an explicit
+  action (+ optional cron); a stale forecast is flagged like a stale
+  scenario (§4.6).
+
+### 13.6 Gate (P9.6)
+
+E2E suite extended with one case per feature (explanation rows present on a
+solved scenario; two named cases run and compare; an es session renders the
+translations; re-optimize pins done pickings and restores them on revert;
+forecast refresh → demand rows → the lot-sizing solve uses them and revert
+restores the dates); offline tests green; CI green; README + changelog
+updated in the same commits.
