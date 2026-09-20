@@ -10,6 +10,12 @@ All user-facing changes, newest first. One to three lines per entry.
   manager role.
 - Apply and Revert now ask for confirmation before writing or
   restoring records.
+- Fix: applying a scenario now stamps the affected records with the
+  scenario that produced them (the link follows reverts and
+  re-applies), and the link write is part of the apply audit trail.
+- Fix: a binding domain that parses but is not a list of conditions
+  is now rejected when the binding is authored, instead of crashing
+  the data extraction.
 
 ## 1.0.0 (2026-09-20)
 

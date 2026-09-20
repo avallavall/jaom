@@ -688,6 +688,27 @@ class JaotScenario(models.Model):
                         'applied_at': now,
                         'company_id': self.company_id.id,
                     })
+                # Stamp the link back to this scenario (SPECS §5.7): the
+                # decision fields alone do not record which scenario
+                # produced them. The before-link is logged so a revert
+                # restores the previous scenario (or clears it).
+                if 'jaot_scenario_id' in rec._fields:
+                    link = rec.jaot_scenario_id
+                    before_link = link.id if len(link) else False
+                    if before_link != self.id:
+                        rec.jaot_scenario_id = self.id
+                    log_model.create({
+                        'scenario_id': self.id,
+                        'sequence': i,
+                        'res_model': line.res_model,
+                        'res_id': line.res_id,
+                        'field_path': 'jaot_scenario_id',
+                        'before_value': before_link,
+                        'after_value': self.id,
+                        'state': 'applied',
+                        'applied_at': now,
+                        'company_id': self.company_id.id,
+                    })
             applied += 1
         self.write({
             'applied': True,

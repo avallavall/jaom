@@ -82,7 +82,8 @@ class TestMrpE2E(TransactionCase):
     def test_full_scheduling_lifecycle(self):
         self._ensure_config()
         productions = self._dataset()
-        before = {p.id: p.date_start for p in productions}
+        before = {p.id: (p.date_start, p.jaot_scenario_id)
+                  for p in productions}
 
         sc = self._scenario()
         self.assertEqual(sc.state, 'draft')
@@ -119,20 +120,24 @@ class TestMrpE2E(TransactionCase):
             p.invalidate_recordset()
             self.assertEqual(p.date_start.strftime('%Y-%m-%d'),
                              expected_dates[p.id])
-        # one apply log per decision field (1 per line here)
+            # the link back to the scenario is stamped by the apply
+            self.assertEqual(p.jaot_scenario_id, sc)
+        # one apply log per decision field (1 per line here) plus one per
+        # scenario-link write
         logs = self.env['jaot.apply.log'].search(
             [('scenario_id', '=', sc.id), ('state', '=', 'applied')])
-        self.assertEqual(len(logs), len(lines))
+        self.assertEqual(len(logs), 2 * len(lines))
 
         sc.action_revert()
         self.assertEqual(sc.state, 'solved')
         self.assertFalse(sc.applied)
         for p in productions:
             p.invalidate_recordset()
-            self.assertEqual(p.date_start, before[p.id])
+            self.assertEqual((p.date_start, p.jaot_scenario_id),
+                             before[p.id])
         reverted = self.env['jaot.apply.log'].search(
             [('scenario_id', '=', sc.id), ('state', '=', 'reverted')])
-        self.assertEqual(len(reverted), len(lines))
+        self.assertEqual(len(reverted), 2 * len(lines))
 
     def test_submit_requires_dataset(self):
         """No production orders -> the formulation rejects the snapshot."""

@@ -46,14 +46,22 @@ def validate_expression(expression):
 
 
 def validate_domain(domain):
-    """Raise UserError if ``domain`` is not a valid Odoo domain literal."""
+    """Raise UserError if ``domain`` is not a valid Odoo domain literal.
+
+    A valid literal is a list of conditions; anything else (e.g. the
+    bare literal ``5``) parses fine but is not a domain and would crash
+    the extraction, so it is rejected at authoring time.
+    """
     if not domain:
         return
     try:
-        safe_eval(domain, {})
+        value = safe_eval(domain, {})
     except Exception as exc:
         raise UserError(_(
             'Invalid domain "%s": %s', domain, exc)) from exc
+    if not isinstance(value, list):
+        raise UserError(_(
+            'Invalid domain "%s": must be a list of conditions.', domain))
 
 
 def evaluate(expression, values, context=''):

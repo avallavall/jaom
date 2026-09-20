@@ -111,9 +111,10 @@ class TestVrpE2E(TransactionCase):
     def test_full_routing_lifecycle(self):
         self._ensure_config()
         _warehouse, pickings, vehicle = self._dataset(n_orders=3)
-        before = {p.id: (p.jaot_vehicle_id, p.jaot_route_sequence)
-                  for p in pickings}
-        self.assertTrue(all(not v[0] and not v[1] for v in before.values()))
+        before = {p.id: (p.jaot_vehicle_id, p.jaot_route_sequence,
+                         p.jaot_scenario_id) for p in pickings}
+        self.assertTrue(all(not v[0] and not v[1] and not v[2]
+                            for v in before.values()))
 
         sc = self._scenario()
         self.assertEqual(sc.state, 'draft')
@@ -145,12 +146,16 @@ class TestVrpE2E(TransactionCase):
             p.invalidate_recordset()
             self.assertEqual(p.jaot_vehicle_id, vehicle)
             self.assertGreater(p.jaot_route_sequence, 0)
+            # the link back to the scenario is stamped by the apply
+            self.assertEqual(p.jaot_scenario_id, sc)
         # the route is a permutation of 1..3 (one position per picking)
         self.assertEqual(
             sorted(p.jaot_route_sequence for p in pickings), [1, 2, 3])
-        # one apply log per decision field (2 per line here)
+        # one apply log per decision field (2 per line here) plus one per
+        # scenario-link write
         expected_logs = sum(
-            len(l.decision) for l in sc.scenario_line_ids)
+            len(l.decision) for l in sc.scenario_line_ids) \
+            + len(sc.scenario_line_ids)
         logs = self.env['jaot.apply.log'].search(
             [('scenario_id', '=', sc.id), ('state', '=', 'applied')])
         self.assertEqual(len(logs), expected_logs)
@@ -160,8 +165,10 @@ class TestVrpE2E(TransactionCase):
         self.assertFalse(sc.applied)
         for p in pickings:
             p.invalidate_recordset()
-            self.assertEqual((p.jaot_vehicle_id, p.jaot_route_sequence),
-                             before[p.id])
+            self.assertEqual(
+                (p.jaot_vehicle_id, p.jaot_route_sequence,
+                 p.jaot_scenario_id),
+                before[p.id])
         reverted = self.env['jaot.apply.log'].search(
             [('scenario_id', '=', sc.id), ('state', '=', 'reverted')])
         self.assertEqual(len(reverted), expected_logs)
