@@ -790,7 +790,11 @@ class JaotScenario(models.Model):
         target = rec
         for hop in hops[:-1]:
             target = target[hop]
-            if target is False or target is None:
+            # An empty many2one hop is an empty recordset (falsy), not
+            # False/None, so the guard must test truthiness: writing a
+            # dotted path through a missing intermediate record would
+            # otherwise be a silent no-op logged as if it succeeded.
+            if not target:
                 raise UserError(_(
                     "Cannot write '%(p)s': an intermediate record is "
                     "missing.", p=field_path))

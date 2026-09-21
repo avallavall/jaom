@@ -4,6 +4,10 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- Fix: applying a scenario whose decision writes through a dotted field
+  path no longer silently drops the write (and logs it as if it
+  succeeded) when an intermediate record is missing — it now fails with
+  a clear error and rolls the whole apply back.
 - Fix: saving a recipe binding now rejects a parameter constant that is
   not a number (a clear error at save time), instead of letting it through
   and crashing later when a scenario is submitted.

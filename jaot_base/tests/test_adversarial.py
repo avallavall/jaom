@@ -192,3 +192,17 @@ class TestAdversarial(TransactionCase):
         summary = sc.kpi_summary or {}
         self.assertIsNotNone(summary.get('baseline_objective'))
         self.assertIn('delta_vs_baseline', summary)
+
+    def test_write_field_path_empty_intermediate_m2o_raises(self):
+        # Writing a decision through a dotted path whose intermediate
+        # many2one is empty must fail cleanly, not silently no-op while
+        # the audit log records the write as if it happened. (Relevant to
+        # any recipe/formulation that emits a dotted decision path.)
+        recipe, _items = make_toys(self.env, self._company())
+        sc = self.env['jaot.scenario'].create({
+            'name': 'Adv', 'recipe_id': recipe.id,
+            'company_id': self._company().id})
+        partner = self.env['res.partner'].create({'name': 'Adv P'})
+        self.assertFalse(partner.country_id)
+        with self.assertRaises(UserError):
+            sc._write_field_path(partner, 'country_id.name', 'X')
