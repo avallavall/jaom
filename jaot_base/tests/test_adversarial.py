@@ -256,3 +256,27 @@ class TestAdversarial(TransactionCase):
             sc.action_submit()
         sc.invalidate_recordset()
         self.assertEqual(sc.state, 'draft')
+
+    def test_state_machine_invalid_transitions(self):
+        # The scenario state machine must reject the wrong actions with a
+        # clean error, never a crash or a bogus transition: applying a
+        # draft scenario, reverting a scenario that is not applied, and
+        # resubmitting an already-solved scenario are all invalid moves a
+        # user can trigger from the buttons.
+        recipe, _items = make_toys(self.env, self._company())
+        make_config(self.env, self._company())
+        sc = self.env['jaot.scenario'].create({
+            'name': 'SM', 'recipe_id': recipe.id,
+            'company_id': self._company().id})
+        with self.assertRaises(UserError):
+            sc.action_apply()
+        fake = FakeJaotClient()
+        with mock.patch.object(JaotConfig, 'get_client', return_value=fake):
+            sc.action_submit()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        sc.invalidate_recordset()
+        self.assertEqual(sc.state, 'solved')
+        with self.assertRaises(UserError):
+            sc.action_revert()
+        with self.assertRaises(UserError):
+            sc.action_submit()
