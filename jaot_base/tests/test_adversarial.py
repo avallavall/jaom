@@ -124,3 +124,20 @@ class TestAdversarial(TransactionCase):
         sc.invalidate_recordset()
         self.assertEqual(sc.state, 'solved')
         self.assertFalse(sc.applied)
+
+    def test_parameter_binding_non_numeric_constant_rejected(self):
+        # A parameter binding whose constant is not a number must be
+        # rejected at authoring time. Extraction does float() on the
+        # constant, so a non-numeric value used to sail past the Validate
+        # button and binding validation and then crash scenario submission.
+        recipe, _items = make_toys(self.env, self._company())
+        Role = self.env['jaot.recipe.role']
+        Binding = self.env['jaot.binding']
+        role = Role.create({
+            'recipe_id': recipe.id, 'name': 'bad_param', 'kind': 'parameter',
+            'data_type': 'number', 'required': False})
+        with self.assertRaises(UserError):
+            Binding.create({
+                'recipe_id': recipe.id, 'role_id': role.id,
+                'constant_value': 'not-a-number',
+                'company_id': self._company().id})

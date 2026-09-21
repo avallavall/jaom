@@ -4,6 +4,9 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- Fix: saving a recipe binding now rejects a parameter constant that is
+  not a number (a clear error at save time), instead of letting it through
+  and crashing later when a scenario is submitted.
 - Fix: applying and reverting a scenario are now all-or-nothing. A write
   failure part-way rolls back the whole operation (no partial plan left
   behind), and applying when none of the plan's target records still exist

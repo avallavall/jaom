@@ -171,6 +171,15 @@ class JaotBinding(models.Model):
                 raise UserError(_(
                     "Parameter role '%(r)s' needs a constant value.",
                     r=role.name))
+            # Extraction does float() on the constant, so a non-numeric
+            # value would crash scenario submission (SPECS 5.4: validate
+            # at authoring, not at solve time).
+            try:
+                float(const)
+            except (TypeError, ValueError):
+                raise UserError(_(
+                    "Parameter role '%(r)s' constant '%(c)s' is not a "
+                    "number.", r=role.name, c=const))
         else:
             res_model = vals.get('res_model')
             if res_model is None and self and self.id:
