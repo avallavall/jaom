@@ -179,3 +179,37 @@ class TestVrpFormulation(TransactionCase):
         self.assertIsNone(f.explain_constraint('visit_0', problem, names))
         self.assertIsNone(f.explain_constraint('visit_9', problem, names))
         self.assertIsNone(f.explain_constraint('capacity_3', problem, names))
+
+    # -- human-readable presentation (P9.7) ----------------------------
+    def test_presentation_objective_unit(self):
+        self.assertEqual(Vrp().objective_unit(), 'distance')
+
+    def test_presentation_referenced_records(self):
+        f = Vrp()
+        self.assertEqual(
+            f.referenced_records(
+                {'jaot_vehicle_id': 100, 'jaot_route_sequence': 1}),
+            [('fleet.vehicle', 100)])
+        self.assertEqual(f.referenced_records({}), [])
+        self.assertEqual(
+            f.referenced_records({'jaot_route_sequence': 2}), [])
+
+    def test_presentation_render_line(self):
+        f = Vrp()
+        names = {('fleet.vehicle', 100): 'Van 1'}
+        decision = {'jaot_vehicle_id': 100, 'jaot_route_sequence': 1}
+        self.assertEqual(
+            f.render_line(decision, record_names=names),
+            'Vehicle Van 1 · stop 1')
+        self.assertEqual(
+            f.render_line(decision, record_names=None),
+            'Vehicle 100 · stop 1')
+        # a route position without a vehicle degrades gracefully
+        self.assertEqual(
+            f.render_line({'jaot_route_sequence': 2}, record_names=names),
+            '—')
+        # a vehicle without a position renders just the vehicle
+        self.assertEqual(
+            f.render_line({'jaot_vehicle_id': 100}, record_names=names),
+            'Vehicle Van 1')
+        self.assertEqual(f.render_line({}), '—')

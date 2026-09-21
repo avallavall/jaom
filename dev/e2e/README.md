@@ -7,7 +7,7 @@ modules. One case per user flow; the runner exits `0` only when every case
 passes and writes per-case results (plus a screenshot per failure) to
 `dev/e2e/results/e2e_results.json` (git-ignored).
 
-## What it exercises (32 cases)
+## What it exercises (33 cases)
 
 **Connection management**
 - Manager login and navigation.
@@ -75,6 +75,10 @@ passes and writes per-case results (plus a screenshot per failure) to
 - The scenario chatter carries the lifecycle events (submitted, solved,
   applied, reverted); the config chatter carries the key events.
 - Reverted audit-log rows are listed in the Apply Log.
+- Human-readable presentation (P9.7): a solved MRP scenario exposes a
+  plain-language KPI headline, per-line plain-text decisions and a
+  before→after preview; the form renders the Result banner plus the
+  plain-language line columns, with no machine identifiers leaking.
 
 ## Prerequisites
 

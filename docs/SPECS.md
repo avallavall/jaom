@@ -569,3 +569,34 @@ translations; re-optimize pins done pickings and restores them on revert;
 forecast refresh → demand rows → the lot-sizing solve uses them and revert
 restores the dates); offline tests green; CI green; README + changelog
 updated in the same commits.
+
+### 13.7 Human-readable scenario presentation (P9.7)
+
+The scenario UI showed raw decision JSON and a raw KPI Json — unreadable for
+a non-expert. P9.7 presents the same data in plain language, presentation
+only (no solver, no new dependency). The logic lives on the formulation
+classes (framework-free), so the unit tests drive it with plain dicts; the
+Odoo side only resolves units and record names and renders.
+
+- **Plain-language lines** — each `jaot.scenario.line` gains a computed
+  `record_label` (the target record's display name) and `decision_text`
+  (the formulation's `render_line(decision, record_names)`): the toy
+  knapsack says "Selected" / "Not selected", VRP says
+  "Vehicle Van 1 · stop 3", lot sizing says "Start 2026-10-05". A line that
+  references a record (a VRP vehicle) resolves its display name via the
+  formulation's `referenced_records(decision)`. The raw `res_model` /
+  `res_id` / `decision` columns stay available to system users.
+- **Pre-apply preview** — a computed `change_preview` renders before →
+  after against the record's live value ("Not selected -> Selected",
+  "Unchanged"), so a manager sees exactly what applying will do, before
+  applying. It is recomputed when the scenario is applied (depends on the
+  scenario state) and degrades to a "no longer exists" note when the target
+  record is deleted.
+- **Unit-labelled KPI headline** — `jaot.scenario` gains computed
+  `objective_unit` (the formulation's `objective_unit()` resolved to
+  `''` / `km` / the company currency) and `kpi_headline`. The headline
+  states the result in words: "Saves 120.50 (8.2%) versus your current plan
+  (1460.60 -> 1340.10)" for a minimise gain, "Gains …" for a maximise gain,
+  "Worse by …" for a loss, or the objective-only line ("Objective 60.00
+  (maximized)") when there is no baseline. Shown as a banner on the form
+  and as a column in the list.

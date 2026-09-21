@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0-20260908\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-20 17:25+0000\n"
-"PO-Revision-Date: 2026-09-20 17:25+0000\n"
+"POT-Creation-Date: 2026-09-21 11:25+0000\n"
+"PO-Revision-Date: 2026-09-21 11:25+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -23,10 +23,22 @@ msgstr ""
 
 #. module: jaot_base
 #. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "%(b)s -> %(a)s"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
 #: code:addons/jaot_base/models/jaot_config.py:0
 msgid ""
 "%(status)s %(version)s — %(passed)s/%(total)s health checks. Solvers "
 "available: %(solvers)s."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "%(verb)s %(d)s (%(p).1f%%) versus your current plan (%(b)s -> %(o)s)"
 msgstr ""
 
 #. module: jaot_base
@@ -47,6 +59,11 @@ msgstr ""
 #. module: jaot_base
 #: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_recipe_form
 msgid "<span class=\"o_stat_value\">Bindings</span>"
+msgstr ""
+
+#. module: jaot_base
+#: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
+msgid "<strong>Result:</strong>"
 msgstr ""
 
 #. module: jaot_base
@@ -236,6 +253,11 @@ msgid "Cannot write '%(p)s': an intermediate record is missing."
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__change_preview
+msgid "Change"
+msgstr ""
+
+#. module: jaot_base
 #: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
 msgid "Check staleness"
 msgstr ""
@@ -352,6 +374,7 @@ msgstr ""
 
 #. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__decision
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__decision_text
 msgid "Decision"
 msgstr ""
 
@@ -500,6 +523,12 @@ msgstr ""
 #: model:ir.model.fields,help:jaot_base.field_jaot_config__solve_time_limit
 msgid ""
 "Forwarded to JAOT options.time_limit_seconds (SPECS §5.1, default 300)."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Gains"
 msgstr ""
 
 #. module: jaot_base
@@ -798,6 +827,11 @@ msgid "Jaot Task"
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__kpi_headline
+msgid "KPI headline"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__kpi_summary
 #: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
 msgid "KPI summary"
@@ -953,6 +987,20 @@ msgid "None"
 msgstr ""
 
 #. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid ""
+"None of the plan's target records exist any more; the scenario has not been "
+"applied."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/jaot_formulations.py:0
+msgid "Not selected"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__note
 msgid "Note"
 msgstr ""
@@ -987,6 +1035,12 @@ msgid "Number of messages with delivery error"
 msgstr ""
 
 #. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Objective %(o)s (%(s)s)"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__objective_sense
 msgid "Objective Sense"
 msgstr ""
@@ -999,6 +1053,11 @@ msgstr ""
 #. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__objective_delta
 msgid "Objective delta"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__objective_unit
+msgid "Objective unit"
 msgstr ""
 
 #. module: jaot_base
@@ -1108,6 +1167,12 @@ msgstr ""
 #. module: jaot_base
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_recipe.py:0
+msgid "Parameter role '%(r)s' constant '%(c)s' is not a number."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_recipe.py:0
 msgid "Parameter role '%(r)s' needs a constant value."
 msgstr ""
 
@@ -1186,6 +1251,11 @@ msgstr ""
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "Reconcile error: %s"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__record_label
+msgid "Record"
 msgstr ""
 
 #. module: jaot_base
@@ -1275,6 +1345,18 @@ msgid "Roles"
 msgstr ""
 
 #. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Same as your current plan (%(o)s)"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Saves"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_apply_log__scenario_id
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__scenario_id
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__scenario_id
@@ -1293,6 +1375,8 @@ msgid "Scenarios"
 msgstr ""
 
 #. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/jaot_formulations.py:0
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_demo_item__selected
 msgid "Selected"
 msgstr ""
@@ -1383,6 +1467,12 @@ msgid "Source model"
 msgstr ""
 
 #. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Source record no longer exists"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_apply_log__state
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__state
 msgid "State"
@@ -1407,6 +1497,12 @@ msgstr ""
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "Submitted to JAOT (task %s)."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Target record no longer exists"
 msgstr ""
 
 #. module: jaot_base
@@ -1482,6 +1578,12 @@ msgstr ""
 #: model:ir.actions.act_window,name:jaot_base.action_jaot_demo_item
 #: model:ir.ui.menu,name:jaot_base.menu_jaot_demo_item
 msgid "Toy Items"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Unchanged"
 msgstr ""
 
 #. module: jaot_base
@@ -1562,6 +1664,12 @@ msgid "Whatif State"
 msgstr ""
 
 #. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Worse by %(d)s (%(p).1f%%) than your current plan (%(b)s -> %(o)s)"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,help:jaot_base.field_jaot_scenario_whatif__status
 msgid "computed, infeasible, or SKIPPED_BUDGET (shown as a bound)."
 msgstr ""
@@ -1569,7 +1677,25 @@ msgstr ""
 #. module: jaot_base
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "km"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "maximized"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "maximizing"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "minimized"
 msgstr ""
 
 #. module: jaot_base

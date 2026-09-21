@@ -1001,6 +1001,51 @@ case_('explanation_section', async (ctx) => {
   assert(/Tightly used constraints:/.test(formText), 'Explanation section missing the tight constraints');
 });
 
+case_('presentation_section', async (ctx) => {
+  // SPECS 13.7: a solved scenario presents its result in plain language —
+  // a unit-labelled KPI headline, per-line plain-text decisions and a
+  // before->after preview — and the form shows the Result banner plus the
+  // plain-language line columns (no raw model fields, no identifiers).
+  const sid = ctx.mrpSolvedId;
+  assert(sid, 'no solved MRP scenario');
+  // the scalars live on the scenario; the lines are read from their own
+  // model (dot-notation through a One2many is not a valid read field).
+  const row = await readScenario(ctx.rpc, sid, ['kpi_headline', 'objective_unit']);
+  assert(typeof row.kpi_headline === 'string' && row.kpi_headline.length > 0,
+    `kpi_headline empty: ${JSON.stringify(row.kpi_headline)}`);
+  assert(/Objective|versus your current plan|Saves|Gains|Worse/i.test(row.kpi_headline),
+    `kpi_headline not plain-language: ${row.kpi_headline}`);
+  const lines = await ctx.rpc('jaot.scenario.line', 'search_read', [
+    [['scenario_id', '=', sid]],
+    ['id', 'record_label', 'decision_text', 'change_preview']]);
+  assert(lines.length > 0, 'solved scenario has no lines');
+  for (const l of lines) {
+    assert(typeof l.decision_text === 'string' && l.decision_text.length > 0,
+      `line ${l.id} has empty decision_text: ${JSON.stringify(l)}`);
+    assert(typeof l.record_label === 'string' && l.record_label.length > 0,
+      `line ${l.id} has empty record_label: ${JSON.stringify(l)}`);
+    assert(typeof l.change_preview === 'string' && l.change_preview.length > 0,
+      `line ${l.id} has empty change_preview: ${JSON.stringify(l)}`);
+  }
+  // no machine identifiers leak into the plain-language text
+  const allText = [row.kpi_headline]
+    .concat(lines.map((l) => `${l.record_label} ${l.decision_text} ${l.change_preview}`))
+    .join(' ');
+  assert(!/cap_\d|deliver_\d|x_\d+_\d|q_\d+_\d|fix_\d|bal_\d|link_\d|date_start/.test(allText),
+    `machine identifiers in the presentation text: ${allText}`);
+  // the form renders the Result banner and the plain-language line columns
+  await openForm(ctx.page, sid);
+  const banner = ctx.page.locator('.o_form_view .alert-info', { hasText: 'Result:' });
+  assert(await banner.count() > 0, 'Result banner not visible in the form');
+  const linesTab = ctx.page.locator('.o_notebook_headers .nav-link', { hasText: 'Lines' });
+  assert(await linesTab.count() > 0, 'Lines tab not visible in the form');
+  await linesTab.first().click();
+  await ctx.page.waitForTimeout(1000);
+  const formText = await ctx.page.locator('.o_form_view').innerText();
+  assert(/Start \d{4}-\d{2}-\d{2}/.test(formText), 'Lines tab did not render the Start <date> decisions');
+  assert(/->|Unchanged/.test(formText), 'Lines tab did not render the before->after preview');
+});
+
 // ----------------------------------------------------------------------
 // runner
 // ----------------------------------------------------------------------

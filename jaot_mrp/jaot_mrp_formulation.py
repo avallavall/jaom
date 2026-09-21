@@ -270,3 +270,15 @@ class MrpLotSizing(JaotFormulation):
                     day=days[d - 1])
         # bal / link: structural flow constraints, nothing for a manager
         return None
+
+    # -- human-readable presentation (P9.7) ----------------------------
+    def objective_unit(self):
+        # setup + holding cost, in the company currency
+        return 'money'
+
+    def render_line(self, decision, record_names=None):
+        decision = decision or {}
+        start = decision.get(self._START_FIELD)
+        if start in (False, None, ''):
+            return '—'
+        return _('Start %(day)s', day=str(start)[:10])

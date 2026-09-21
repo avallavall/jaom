@@ -44,6 +44,11 @@
                         Solved against stale data: the underlying Odoo
                         records changed after extraction.
                     </div>
+                    <div class="alert alert-info" role="alert"
+                         invisible="not kpi_headline">
+                        <strong>Result:</strong>
+                        <field name="kpi_headline" nolabel="1"/>
+                    </div>
                     <group>
                         <group>
                             <field name="name"/>
@@ -78,12 +83,19 @@
                             <field name="scenario_line_ids" nolabel="1">
                                 <list>
                                     <field name="sequence" widget="handle"/>
-                                    <field name="res_model"/>
-                                    <field name="res_id"/>
-                                    <field name="decision"/>
+                                    <field name="record_label"/>
+                                    <field name="decision_text"/>
+                                    <field name="change_preview"/>
                                     <field name="kpi_contribution"/>
-                                    <field name="delta_vs_baseline"/>
                                     <field name="note"/>
+                                    <field name="res_model"
+                                          groups="base.group_system"/>
+                                    <field name="res_id"
+                                          groups="base.group_system"/>
+                                    <field name="decision"
+                                          groups="base.group_system"/>
+                                    <field name="delta_vs_baseline"
+                                          groups="base.group_system"/>
                                 </list>
                             </field>
                         </page>
@@ -93,7 +105,10 @@
                             <field name="infeasibility" nolabel="1"/>
                         </page>
                         <page string="KPI summary" name="kpi">
-                            <field name="kpi_summary" nolabel="1"/>
+                            <field name="kpi_headline" nolabel="1"
+                                  invisible="not kpi_headline"/>
+                            <field name="kpi_summary" nolabel="1"
+                                  groups="base.group_system"/>
                         </page>
                         <page string="Explanation" name="explanation"
                               invisible="not explanation">
@@ -144,6 +159,7 @@
                 <field name="name"/>
                 <field name="recipe_id"/>
                 <field name="state"/>
+                <field name="kpi_headline"/>
                 <field name="objective_value"/>
                 <field name="gap"/>
                 <field name="line_count"/>

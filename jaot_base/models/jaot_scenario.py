@@ -2,7 +2,7 @@ import hashlib
 import json
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
 from ..jaot_client import JaotAPIError
 from ..jaot_expr import evaluate, evaluate_domain
@@ -100,6 +100,12 @@ class JaotScenario(models.Model):
         string='Lines', compute='_compute_line_count')
     company_id = fields.Many2one(
         'res.company', required=True, default=lambda self: self.env.company)
+    objective_unit = fields.Char(
+        string='Objective unit', compute='_compute_objective_unit',
+        readonly=True, copy=False)
+    kpi_headline = fields.Char(
+        string='KPI headline', compute='_compute_kpi_headline',
+        readonly=True, copy=False)
 
     _task_id_uniq = models.Constraint(
         'UNIQUE (jaot_task_id)',
@@ -119,6 +125,18 @@ class JaotScenario(models.Model):
     def _compute_explanation_text(self):
         for rec in self:
             rec.explanation_text = rec._render_explanation_text()
+
+    @api.depends('recipe_id', 'objective_value', 'objective_sense',
+                'kpi_summary')
+    def _compute_objective_unit(self):
+        for rec in self:
+            rec.objective_unit = rec._resolve_objective_unit()
+
+    @api.depends('recipe_id', 'objective_value', 'objective_sense',
+                'kpi_summary')
+    def _compute_kpi_headline(self):
+        for rec in self:
+            rec.kpi_headline = rec._render_kpi_headline()
 
     @staticmethod
     def _fmt_num(value):
@@ -160,6 +178,53 @@ class JaotScenario(models.Model):
         if exp.get('note'):
             lines.append(exp['note'])
         return '\n'.join(lines)
+
+    # -- human-readable presentation (P9.7) ----------------------------
+    def _resolve_objective_unit(self):
+        self.ensure_one()
+        form = get_formulation(self.recipe_id.code) if self.recipe_id else None
+        key = form.objective_unit() if form else ''
+        if key == 'distance':
+            return _('km')
+        if key == 'money':
+            return self.company_id.currency_id.name
+        return ''
+
+    def _render_kpi_headline(self):
+        self.ensure_one()
+        kpi = self.kpi_summary or {}
+        optimized = kpi.get('optimized_objective', self.objective_value)
+        baseline = kpi.get('baseline_objective')
+        delta = kpi.get('delta_vs_baseline')
+        sense = kpi.get('sense') or self.objective_sense
+        unit = self._resolve_objective_unit()
+
+        def fmt(value):
+            if value is None:
+                return '?'
+            text = self._fmt_num(value)
+            return text + (' ' + unit if unit else '')
+
+        if baseline is not None and optimized is not None:
+            if delta is not None and delta > 0:
+                pct = (abs(delta) / abs(baseline) * 100) if baseline else 0.0
+                verb = (_('Gains') if sense == 'maximize' else _('Saves'))
+                return _('%(verb)s %(d)s (%(p).1f%%) versus your current plan '
+                         '(%(b)s -> %(o)s)',
+                         verb=verb, d=fmt(delta), p=pct,
+                         o=fmt(optimized), b=fmt(baseline))
+            if delta is not None and delta < 0:
+                pct = (abs(delta) / abs(baseline) * 100) if baseline else 0.0
+                return _('Worse by %(d)s (%(p).1f%%) than your current plan '
+                        '(%(b)s -> %(o)s)',
+                        d=fmt(abs(delta)), p=pct,
+                        o=fmt(optimized), b=fmt(baseline))
+            return _('Same as your current plan (%(o)s)', o=fmt(optimized))
+        if optimized is not None:
+            sense_txt = (_('minimized') if sense != 'maximize'
+                         else _('maximized'))
+            return _('Objective %(o)s (%(s)s)', o=fmt(optimized), s=sense_txt)
+        return ''
 
     @api.constrains('state', 'applied')
     def _check_applied_state(self):
@@ -932,6 +997,134 @@ class JaotScenarioLine(models.Model):
     company_id = fields.Many2one(
         'res.company', required=True, default=lambda self: self.env.company,
         copy=False)
+    record_label = fields.Char(
+        string='Record', compute='_compute_record_label', readonly=True)
+    decision_text = fields.Char(
+        string='Decision', compute='_compute_decision_text', readonly=True)
+    change_preview = fields.Char(
+        string='Change', compute='_compute_change_preview', readonly=True)
+
+    @api.depends('res_model', 'res_id')
+    def _compute_record_label(self):
+        for line in self:
+            if not line.res_model or not line.res_id:
+                line.record_label = ''
+                continue
+            model = self.env.get(line.res_model)
+            if model is None:
+                line.record_label = ''
+                continue
+            try:
+                rec = model.browse(line.res_id).exists()
+                if not rec:
+                    line.record_label = _('Source record no longer exists')
+                else:
+                    line.record_label = rec.display_name
+            except AccessError:
+                # The user can read the scenario but not the source record:
+                # present the record type, never a machine identifier.
+                line.record_label = line._model_human_name()
+                continue
+
+    @api.depends('decision', 'scenario_id.recipe_id.code')
+    def _compute_decision_text(self):
+        for line in self:
+            line.decision_text = line._render_decision_text()
+
+    def _render_decision_text(self):
+        self.ensure_one()
+        decision = self.decision or {}
+        if not decision:
+            return ''
+        recipe = self.scenario_id.recipe_id
+        form = get_formulation(recipe.code) if recipe else None
+        if form is None:
+            return ', '.join('%s=%s' % (k, v) for k, v in decision.items())
+        names = self._referenced_names(form, decision)
+        return form.render_line(decision, record_names=names)
+
+    @api.depends('decision', 'res_model', 'res_id', 'scenario_id.state')
+    def _compute_change_preview(self):
+        for line in self:
+            line.change_preview = line._render_change_preview()
+
+    def _render_change_preview(self):
+        self.ensure_one()
+        decision = self.decision or {}
+        if not decision or not self.res_model or not self.res_id:
+            return ''
+        recipe = self.scenario_id.recipe_id
+        form = get_formulation(recipe.code) if recipe else None
+        try:
+            rec = self.env[self.res_model].browse(self.res_id)
+            if not rec.exists():
+                return _('Target record no longer exists')
+            before_decision = {
+                field: self._read_field_path(rec, field)
+                for field in decision}
+            names = self._diff_referenced_names(
+                form, before_decision, decision)
+        except AccessError:
+            # The user can read the plan but not the source record: present
+            # the plan's own value only, never a fake before/after diff.
+            return self._decision_only(form, decision)
+        if form is None:
+            before_txt = ', '.join('%s=%s' % (k, v)
+                                   for k, v in before_decision.items())
+            after_txt = ', '.join('%s=%s' % (k, v)
+                                  for k, v in decision.items())
+        else:
+            before_txt = form.render_line(before_decision, record_names=names)
+            after_txt = form.render_line(decision, record_names=names)
+        if before_txt == after_txt:
+            return _('Unchanged')
+        return _('%(b)s -> %(a)s', b=before_txt, a=after_txt)
+
+    def _decision_only(self, form, decision):
+        """The plan's own value, for users without source access."""
+        if form is None:
+            return ', '.join('%s=%s' % (k, v) for k, v in decision.items())
+        return form.render_line(
+            decision, record_names=self._referenced_names(form, decision))
+
+    def _referenced_names(self, form, decision):
+        names = {}
+        for key, rid in form.referenced_records(decision):
+            if (key, rid) not in names:
+                names[(key, rid)] = self._source_display_name(key, rid)
+        return names
+
+    def _diff_referenced_names(self, form, before_decision, decision):
+        names = {}
+        for rd in (before_decision, decision):
+            for key, rid in form.referenced_records(rd):
+                if (key, rid) not in names:
+                    names[(key, rid)] = self._source_display_name(key, rid)
+        return names
+
+    def _source_display_name(self, model_name, res_id):
+        """Display name of a referenced record, or its id if unreadable."""
+        try:
+            rec = self.env[model_name].browse(int(res_id))
+            return rec.display_name if rec.exists() else str(res_id)
+        except AccessError:
+            return str(res_id)
+
+    def _model_human_name(self):
+        """Human-readable name of the line's source model; '' if none."""
+        model = self.env.get(self.res_model)
+        if model is None:
+            return ''
+        return model._description or ''
+
+    @staticmethod
+    def _read_field_path(rec, field_path):
+        cur = rec
+        for hop in field_path.split('.'):
+            if cur is False or cur is None:
+                return False
+            cur = cur[hop]
+        return cur
 
 
 class JaotScenarioWhatif(models.Model):

@@ -71,3 +71,17 @@ class TestToyKnapsack(TransactionCase):
         self.assertEqual(by_id[2]['decision'], {'selected': False})
         self.assertEqual(by_id[2]['kpi_contribution'], 0.0)
         self.assertEqual(by_id[1]['res_model'], 'jaot.demo.item')
+
+    # -- human-readable presentation (P9.7) ----------------------------
+    def test_presentation_objective_unit(self):
+        self.assertEqual(ToyKnapsack().objective_unit(), '')
+
+    def test_presentation_referenced_records(self):
+        self.assertEqual(
+            ToyKnapsack().referenced_records({'selected': True}), [])
+
+    def test_presentation_render_line(self):
+        f = ToyKnapsack()
+        self.assertEqual(f.render_line({'selected': True}), 'Selected')
+        self.assertEqual(f.render_line({'selected': False}), 'Not selected')
+        self.assertEqual(f.render_line({}), '')

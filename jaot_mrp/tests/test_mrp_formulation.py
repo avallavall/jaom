@@ -208,3 +208,20 @@ class TestMrpFormulation(TransactionCase):
         self.assertIsNone(f.explain_constraint('cap_9', problem, names))
         self.assertIsNone(f.explain_constraint('deliver_99', problem, names))
         self.assertIsNone(f.explain_constraint('fix_bad', problem, names))
+
+    # -- human-readable presentation (P9.7) ----------------------------
+    def test_presentation_objective_unit(self):
+        self.assertEqual(MrpLotSizing().objective_unit(), 'money')
+
+    def test_presentation_referenced_records(self):
+        # lot sizing references no record to label
+        self.assertEqual(
+            MrpLotSizing().referenced_records(
+                {'date_start': '2026-10-05 00:00:00'}), [])
+
+    def test_presentation_render_line(self):
+        f = MrpLotSizing()
+        self.assertEqual(
+            f.render_line({'date_start': '2026-10-05 00:00:00'}),
+            'Start 2026-10-05')
+        self.assertEqual(f.render_line({}), '—')

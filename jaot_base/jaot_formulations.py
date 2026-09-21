@@ -15,6 +15,19 @@ The snapshot shape is produced by ``jaot.scenario._extract_snapshot``::
         "_parameters": {role_name: value, ...},
     }
 """
+from odoo import _
+
+
+def _fmt_decision_value(value):
+    """Render one decision value for a human: a missing/empty value
+    (False, None, an empty list, or 0) as a dash, everything else as-is."""
+    if value is False or value is None:
+        return '—'
+    if isinstance(value, (list, tuple)) and not value:
+        return '—'
+    if value == 0:
+        return '—'
+    return str(value)
 
 
 class JaotFormulation:
@@ -63,6 +76,30 @@ class JaotFormulation:
         :meth:`explain_objective`.
         """
         return None
+
+    # -- human-readable presentation (P9.7) ----------------------------
+    def objective_unit(self):
+        """A key for the objective's unit, resolved by the scenario into a
+        display unit: ``''`` (none), ``'distance'`` (kilometres), or
+        ``'money'`` (the company currency). A key, not a symbol, so this
+        stays framework-free."""
+        return ''
+
+    def referenced_records(self, decision):
+        """The ``(res_model, res_id)`` pairs a decision references, for
+        labelling (e.g. the vehicle a VRP line assigns). Empty by default."""
+        return []
+
+    def render_line(self, decision, record_names=None):
+        """A plain-language rendering of a decision dict for a non-expert
+        (P9.7). ``record_names`` maps ``(res_model, res_id)`` to a display
+        name. The base falls back to a compact ``field=value`` list."""
+        decision = decision or {}
+        if not decision:
+            return ''
+        return ', '.join(
+            '%s=%s' % (key, _fmt_decision_value(value))
+            for key, value in decision.items())
 
 
 _REGISTRY = {}
@@ -157,3 +194,13 @@ class ToyKnapsack(JaotFormulation):
                 if selected else 0.0,
             })
         return lines
+
+    def objective_unit(self):
+        # value (unitless) is maximised
+        return ''
+
+    def render_line(self, decision, record_names=None):
+        decision = decision or {}
+        if not decision:
+            return ''
+        return _('Selected') if decision.get('selected') else _('Not selected')

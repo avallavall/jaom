@@ -4,6 +4,11 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- Scenarios now read like a plan, not data: each line names the record and
+  its decision in plain language (e.g. "Van 1 · stop 3", "Start 2026-10-05"),
+  previews the exact before → after change before you apply, and a result
+  banner states the improvement in your currency (or kilometres) versus your
+  current plan.
 - Fix: a what-if analysis that comes back in a malformed shape no longer
   wedges the scenario stuck in "requested" (re-polled and re-crashed on
   every cron run) — the bad rows are skipped and the analysis reaches a

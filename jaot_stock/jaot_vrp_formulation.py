@@ -330,3 +330,30 @@ class Vrp(JaotFormulation):
         # flow / depot in-out / MTZ / baseline fixes: structural,
         # nothing for a manager
         return None
+
+    # -- human-readable presentation (P9.7) ----------------------------
+    def objective_unit(self):
+        # arc-flow distance, haversine kilometres (minimised)
+        return 'distance'
+
+    def referenced_records(self, decision):
+        decision = decision or {}
+        vid = decision.get(self._VEHICLE_FIELD)
+        if vid in (False, None, [], 0):
+            return []
+        return [(self._VEHICLE_MODEL, int(vid))]
+
+    def render_line(self, decision, record_names=None):
+        decision = decision or {}
+        vid = decision.get(self._VEHICLE_FIELD)
+        if vid in (False, None, [], 0):
+            # no vehicle: a bare stop position has nothing to point at
+            return '—'
+        vid = int(vid)
+        name = (record_names or {}).get((self._VEHICLE_MODEL, vid))
+        vehicle = (_('Vehicle %(name)s', name=name) if name
+                   else _('Vehicle %(n)d', n=vid))
+        seq = decision.get(self._SEQ_FIELD)
+        if seq in (False, None, 0, ''):
+            return vehicle
+        return _('%(v)s · stop %(n)d', v=vehicle, n=int(seq))
