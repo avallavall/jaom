@@ -206,3 +206,37 @@ class TestAdversarial(TransactionCase):
         self.assertFalse(partner.country_id)
         with self.assertRaises(UserError):
             sc._write_field_path(partner, 'country_id.name', 'X')
+
+    def test_scenarios_are_isolated_across_companies(self):
+        # A user whose only company is B and who has the JAOT read ACL must
+        # not see scenarios belonging to another company: the isolation
+        # comes from the record rules, not the ACL. A positive control
+        # (the user sees their own company's scenario) proves the filter is
+        # company-based, not access-based.
+        company_a = self._company()
+        company_b = self.env['res.company'].create({'name': 'Iso B'})
+        recipe_a, _ = make_toys(self.env, company_a)
+        make_config(self.env, company_a)
+        recipe_b, _ = make_toys(self.env, company_b)
+        make_config(self.env, company_b)
+        sc_a = self.env['jaot.scenario'].create({
+            'name': 'Iso A', 'recipe_id': recipe_a.id,
+            'company_id': company_a.id})
+        sc_b = self.env['jaot.scenario'].create({
+            'name': 'Iso B', 'recipe_id': recipe_b.id,
+            'company_id': company_b.id})
+        user_b = self.env['res.users'].create({
+            'name': 'Iso B user', 'login': 'iso_b_user_xyz',
+            'company_id': company_b.id,
+            'company_ids': [(6, 0, [company_b.id])],
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('jaot_base.group_user').id])],
+        })
+        env_b = self.env['jaot.scenario'].with_user(user_b)
+        self.assertFalse(
+            env_b.search([('id', '=', sc_a.id)]),
+            'a company-B user must not see a company-A scenario')
+        self.assertTrue(
+            env_b.search([('id', '=', sc_b.id)]),
+            'a company-B user must see their own company scenario')
