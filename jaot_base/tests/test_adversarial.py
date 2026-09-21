@@ -141,3 +141,54 @@ class TestAdversarial(TransactionCase):
                 'recipe_id': recipe.id, 'role_id': role.id,
                 'constant_value': 'not-a-number',
                 'company_id': self._company().id})
+
+    def test_whatif_failed_job_marks_failed(self):
+        # A what-if analysis job that fails after starting must mark the
+        # scenario's what-if failed (with the error) and leave the scenario
+        # itself still usable in its solved state — not stuck in
+        # 'requested' and not taken to failed.
+        fake = FakeJaotClient(scenario_analysis_job={
+            'status': 'failed', 'error': 'budget exhausted'})
+        sc = self._solved(fake=fake)
+        with mock.patch.object(JaotConfig, 'get_client', return_value=fake):
+            sc.action_run_whatif()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        sc.invalidate_recordset()
+        self.assertEqual(sc.whatif_state, 'failed')
+        self.assertTrue(sc.whatif_error)
+        self.assertEqual(sc.state, 'solved')
+
+    def test_whatif_empty_analysis_completes(self):
+        # A what-if job that completes with an empty analysis must finish
+        # cleanly ('done', no rows) rather than crash on the missing keys.
+        fake = FakeJaotClient(scenario_analysis_job={
+            'status': 'completed', 'analysis': {}})
+        sc = self._solved(fake=fake)
+        with mock.patch.object(JaotConfig, 'get_client', return_value=fake):
+            sc.action_run_whatif()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        sc.invalidate_recordset()
+        self.assertEqual(sc.whatif_state, 'done')
+        self.assertEqual(len(sc.whatif_line_ids), 0)
+
+    def test_baseline_delta_written_to_parent(self):
+        # Comparing against the current plan creates a baseline scenario;
+        # once it solves, the parent must carry the baseline link and the
+        # delta in its KPI summary.
+        fake = FakeJaotClient()
+        sc = self._solved(fake=fake)
+        # The offline client returns a constant task id; a real solve
+        # returns a fresh one. Bump it so the baseline scenario does not
+        # collide with the parent on the unique jaot_task_id constraint.
+        fake.task_id = 'fake-task-2'
+        fake.execution_id = 'fake-exec-2'
+        with mock.patch.object(JaotConfig, 'get_client', return_value=fake):
+            baseline = sc.action_compare_baseline()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        baseline.invalidate_recordset()
+        sc.invalidate_recordset()
+        self.assertEqual(baseline.state, 'solved')
+        self.assertTrue(sc.baseline_scenario_id)
+        summary = sc.kpi_summary or {}
+        self.assertIsNotNone(summary.get('baseline_objective'))
+        self.assertIn('delta_vs_baseline', summary)
