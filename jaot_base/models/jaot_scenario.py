@@ -1103,12 +1103,13 @@ class JaotScenarioLine(models.Model):
         return names
 
     def _source_display_name(self, model_name, res_id):
-        """Display name of a referenced record, or its id if unreadable."""
+        """Display name of a referenced record, or '' when this user cannot
+        see it (already deleted or no access to that model)."""
         try:
             rec = self.env[model_name].browse(int(res_id))
-            return rec.display_name if rec.exists() else str(res_id)
+            return rec.display_name if rec.exists() else ''
         except AccessError:
-            return str(res_id)
+            return ''
 
     def _model_human_name(self):
         """Human-readable name of the line's source model; '' if none."""

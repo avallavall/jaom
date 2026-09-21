@@ -352,7 +352,7 @@ class Vrp(JaotFormulation):
         vid = int(vid)
         name = (record_names or {}).get((self._VEHICLE_MODEL, vid))
         vehicle = (_('Vehicle %(name)s', name=name) if name
-                   else _('Vehicle %(n)d', n=vid))
+                   else _('Vehicle'))
         seq = decision.get(self._SEQ_FIELD)
         if seq in (False, None, 0, ''):
             return vehicle

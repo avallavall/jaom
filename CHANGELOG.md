@@ -4,6 +4,10 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- Fix: the plain-language presentation never leaks a referenced record's
+  database id — a viewer without access to that record (e.g. the delivery
+  vehicle) or a deleted one now sees a safe generic label instead of a raw
+  id.
 - Scenarios now read like a plan, not data: each line names the record and
   its decision in plain language (e.g. "Van 1 · stop 3", "Start 2026-10-05"),
   previews the exact before → after change before you apply, and a result

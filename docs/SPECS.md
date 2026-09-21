@@ -585,7 +585,10 @@ Odoo side only resolves units and record names and renders.
   "Vehicle Van 1 · stop 3", lot sizing says "Start 2026-10-05". A line that
   references a record (a VRP vehicle) resolves its display name via the
   formulation's `referenced_records(decision)`. The raw `res_model` /
-  `res_id` / `decision` columns stay available to system users.
+  `res_id` / `decision` columns stay available to system users. The
+  referenced-record lookup is access-safe: a viewer who can read the plan
+  but not the referenced record (e.g. no fleet access), or a record that has
+  been deleted, gets a safe generic label and never a database id.
 - **Pre-apply preview** — a computed `change_preview` renders before →
   after against the record's live value ("Not selected -> Selected",
   "Unchanged"), so a manager sees exactly what applying will do, before

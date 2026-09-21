@@ -201,9 +201,15 @@ class TestVrpFormulation(TransactionCase):
         self.assertEqual(
             f.render_line(decision, record_names=names),
             'Vehicle Van 1 · stop 1')
+        # no display name for the vehicle (unreadable by the viewer or
+        # already deleted): the raw id must never leak into the line
         self.assertEqual(
             f.render_line(decision, record_names=None),
-            'Vehicle 100 · stop 1')
+            'Vehicle · stop 1')
+        self.assertEqual(
+            f.render_line(decision,
+                          record_names={('fleet.vehicle', 100): ''}),
+            'Vehicle · stop 1')
         # a route position without a vehicle degrades gracefully
         self.assertEqual(
             f.render_line({'jaot_route_sequence': 2}, record_names=names),

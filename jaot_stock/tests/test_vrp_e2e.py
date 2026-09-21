@@ -9,6 +9,7 @@ vehicle, and the apply/revert round-trip on ``stock.picking`` is checked.
 """
 from unittest import mock
 
+from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase
 
 from odoo.addons.jaot_base.models.jaot_config import JaotConfig
@@ -266,3 +267,41 @@ class TestVrpE2E(TransactionCase):
         self.assertIn('Tightly used constraints:', text)
         self.assertNotIn('visit_', text)
         self.assertNotIn('capacity_', text)
+
+    def test_presentation_id_free_for_viewer_without_fleet(self):
+        """SPECS 13.7: a viewer who can read the delivery plan but not the
+        fleet vehicles still gets a plain-language line — the vehicle is
+        shown as a generic 'Vehicle' and its database id never leaks into
+        decision_text or change_preview."""
+        self._ensure_config()
+        _wh, _pickings, vehicle = self._dataset(n_orders=3)
+        sc = self._scenario()
+        fake = FakeVrpClient()
+        with self._patch_client(fake):
+            sc.action_submit()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        self.assertEqual(sc.state, 'solved')
+
+        viewer = self.env['res.users'].create({
+            'name': 'Vrp reader', 'login': 'vrp_reader_xyz',
+            'company_id': self._company().id,
+            'company_ids': [(6, 0, [self._company().id])],
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('jaot_base.group_user').id])],
+        })
+        # self-check: the vehicle must genuinely be unreadable to this
+        # viewer, so the AccessError fallback below is actually exercised
+        with self.assertRaises(AccessError):
+            vehicle.with_user(viewer).display_name
+
+        for line in sc.scenario_line_ids:
+            seq = line.decision['jaot_route_sequence']
+            vline = line.with_user(viewer).browse(line.id)
+            # the vehicle is unreadable, so both the line text and the
+            # change preview degrade to the plan's own (id-free) value
+            self.assertEqual(vline.decision_text,
+                             'Vehicle · stop %d' % seq)
+            self.assertEqual(vline.change_preview,
+                             'Vehicle · stop %d' % seq)
+            self.assertTrue(vline.record_label)
