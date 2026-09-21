@@ -108,3 +108,19 @@ class TestAdversarial(TransactionCase):
         self.assertFalse(
             self.env['jaot.apply.log'].search(
                 [('scenario_id', '=', sc.id), ('state', '=', 'reverted')]))
+
+    def test_revert_with_missing_target_record(self):
+        # Apply, delete the target record, then revert: the missing target
+        # is skipped (nothing to restore) but the revert still completes and
+        # the scenario returns to solved. No crash, no stuck state.
+        sc = self._solved()
+        sc.action_apply()
+        self.assertEqual(sc.state, 'applied')
+        self.assertTrue(
+            self.env['jaot.apply.log'].search(
+                [('scenario_id', '=', sc.id), ('state', '=', 'applied')]))
+        self.env['jaot.demo.item'].search([]).unlink()
+        sc.action_revert()
+        sc.invalidate_recordset()
+        self.assertEqual(sc.state, 'solved')
+        self.assertFalse(sc.applied)
