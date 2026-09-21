@@ -871,7 +871,8 @@ class JaotScenario(models.Model):
 
     def action_revert(self):
         """applied -> solved: re-apply the logged before-state through the
-        same machinery (SPECS §4.5: revertible)."""
+        same machinery (SPECS §4.5: revertible), atomically inside one
+        savepoint so a failure on any change restores none of them."""
         self.ensure_one()
         if self.state != 'applied':
             raise UserError(_("Only applied scenarios can be reverted."))
@@ -883,15 +884,15 @@ class JaotScenario(models.Model):
             raise UserError(_("No applied changes to revert for this "
                               "scenario."))
         now = fields.Datetime.now()
-        for log in logs:
-            rec = self.env[log.res_model].browse(log.res_id)
-            if rec.exists():
-                with self.env.cr.savepoint():
+        with self.env.cr.savepoint():
+            for log in logs:
+                rec = self.env[log.res_model].browse(log.res_id)
+                if rec.exists():
                     self._write_field_path(rec, log.field_path,
                                            log.before_value)
-            log.state = 'reverted'
-            log.reverted_at = now
-        self.write({'applied': False, 'state': 'solved'})
+                log.state = 'reverted'
+                log.reverted_at = now
+            self.write({'applied': False, 'state': 'solved'})
         self.message_post(body=_("Reverted %(n)s change(s).", n=len(logs)))
         return self
 

@@ -77,3 +77,34 @@ class TestAdversarial(TransactionCase):
         self.assertEqual(len(sc.apply_log_ids), 0)
         target.invalidate_recordset()
         self.assertEqual(target.selected, before)
+
+    def test_revert_is_atomic_on_write_failure(self):
+        # A revert write failure on a middle change must roll the WHOLE
+        # revert back: no change is restored, no log is marked reverted,
+        # and the scenario stays applied. Previously the earlier changes
+        # were already restored and their logs marked reverted, leaving a
+        # partial, half-reverted plan.
+        sc = self._solved()
+        self.assertTrue(sc.scenario_line_ids)
+        sc.action_apply()
+        self.assertEqual(sc.state, 'applied')
+        self.assertTrue(
+            self.env['jaot.apply.log'].search(
+                [('scenario_id', '=', sc.id), ('state', '=', 'applied')]))
+        calls = {'n': 0}
+        real = JaotScenario._write_field_path
+
+        def flaky(self_rec, rec, field_path, value):
+            calls['n'] += 1
+            if calls['n'] >= 2:
+                raise UserError('simulated revert write failure')
+            return real(self_rec, rec, field_path, value)
+
+        with mock.patch.object(JaotScenario, '_write_field_path', flaky):
+            with self.assertRaises(UserError):
+                sc.action_revert()
+        sc.invalidate_recordset()
+        self.assertEqual(sc.state, 'applied')
+        self.assertFalse(
+            self.env['jaot.apply.log'].search(
+                [('scenario_id', '=', sc.id), ('state', '=', 'reverted')]))
