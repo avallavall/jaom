@@ -1,6 +1,6 @@
 # JAOM — Development Plan (Phases & Tasks)
 
-**Status:** v1.0 — 2026-09-20 (Phase 4 complete (P4.5 done: upstream feature request filed as avallavall/jaot#3); Phase 5 complete: P5.1–P5.6 done, P5.7 gate **PASSED** — all four CI jobs green locally, evidence in `docs/ci.md`; P5.8 live e2e acceptance suite (`dev/e2e`, Playwright) — 31/31 cases green against the live stack (full scenario surface: connection lifecycle, authoring validation, UI flows, MRP + VRP lifecycles, state guards, role controls), and surfaced and fixed the manager ACL gaps, the missing scenario-link stamp on apply, and the non-list domain validation hole; Phase 6: P6.1 `jaot_mrp` done — the second domain at the same quality bar, 14 tests green in the 5 620-test run; Phase 7 complete except P7.2 — blocked(external): the public store listing is the maintainer's call; P8.1 done: local tag `v1.0.0` + changelog. Remaining external items: P7.2, any `git push` / announcement, first external user live; Phase 9 in progress: P9.0 (RAG index cleanup, EN+ES) done; P9.1 done (plan explanation, 32/32 e2e green); P9.2–P9.6 todo — see §13 in SPECS
+**Status:** v1.0 — 2026-09-20 (Phase 4 complete (P4.5 done: upstream feature request filed as avallavall/jaot#3); Phase 5 complete: P5.1–P5.6 done, P5.7 gate **PASSED** — all four CI jobs green locally, evidence in `docs/ci.md`; P5.8 live e2e acceptance suite (`dev/e2e`, Playwright) — 31/31 cases green against the live stack (full scenario surface: connection lifecycle, authoring validation, UI flows, MRP + VRP lifecycles, state guards, role controls), and surfaced and fixed the manager ACL gaps, the missing scenario-link stamp on apply, and the non-list domain validation hole; Phase 6: P6.1 `jaot_mrp` done — the second domain at the same quality bar, 14 tests green in the 5 620-test run; Phase 7 complete except P7.2 — blocked(external): the public store listing is the maintainer's call; P8.1 done: local tag `v1.0.0` + changelog. Remaining external items: P7.2, any `git push` / announcement, first external user live; Phase 9 in progress: P9.0 (RAG index cleanup, EN+ES) done; P9.1 done (plan explanation, 32/32 e2e green); P9.7 done (human-readable presentation, 33/33 e2e green); P9.2–P9.6 todo — see §13 in SPECS
 **Companion:** `SPECS.md` (the what); this file (the how, in what order, and
 who verifies).
 
@@ -78,6 +78,7 @@ who verifies).
 | P9.3 | es translation — full msgstr × 3 modules + CI po-vs-pot msgid parity (SPECS §13.3, §10.5) | todo | — | — |
 | P9.4 | Intraday re-optimization — Re-optimize action on a stale applied routing scenario; done pickings pinned; delta vs frozen plan; apply only changed pickings (SPECS §13.4) | todo | — | — |
 | P9.5 | `jaot_forecast` — ADI/ABC-routed ETS + Croston/SBA, quantiles, backtest, safety stock at 95% service level, optional MRP `forecast_demand` role (SPECS §13.5) | todo | — | — |
+| P9.7 | Human-readable presentation — plain-language lines (`record_label` + `decision_text`), pre-apply `change_preview`, unit-labelled `kpi_headline` banner + list column (SPECS §13.7). Presentation only, no solver / no new dependency. Done: 107/107 offline tests green on a fresh db (incl. plain-language render + access-safe presentation tests), e2e case 33 (`presentation_section`) green — 33/33 against the live stack | done | 2026-09-21 | 211c1c8 |
 | P9.6 | GATE ⛔: e2e case per feature, offline + CI green, README + changelog in the same commit cycle (SPECS §13.6) | todo | — | — |
 
 Statuses: `todo` / `doing` / `done` / `blocked(question)` / `gate-failed`.
@@ -319,6 +320,7 @@ buffers interact with method choice. Full sources:
 | P9.3 | es translation + CI parity check | todo | — | — |
 | P9.4 | Intraday re-optimization | todo | — | — |
 | P9.5 | `jaot_forecast` demand + safety stock | todo | — | — |
+| P9.7 | Human-readable presentation (plain lines, preview, KPI headline) | done | 2026-09-21 | 211c1c8 |
 | P9.6 | GATE: e2e per feature + offline/CI green + docs in-cycle | todo ⛔ | — | — |
 
 **Exit:** every solved plan can explain itself, planners run named
