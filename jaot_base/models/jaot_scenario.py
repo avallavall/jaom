@@ -520,11 +520,17 @@ class JaotScenario(models.Model):
         Budget-truncated rows keep their ``SKIPPED_BUDGET`` status so the UI
         can show them as bounds (SPECS §6.2 step 5)."""
         self.ensure_one()
+        # Store the raw envelope for inspection, then normalize for
+        # processing: a malformed shape (not a dict, or a row section that
+        # is not a list of mappings) must be tolerated, not crash the
+        # reconcile and leave the scenario stuck in 'requested'.
         self.whatif_analysis = analysis
+        if not isinstance(analysis, dict):
+            analysis = {}
         Whatif = self.env['jaot.scenario.whatif']
         Whatif.search([('scenario_id', '=', self.id)]).unlink()
         seq = 0
-        for row in analysis.get('rhs_scenarios') or []:
+        for row in self._as_row_list(analysis.get('rhs_scenarios')):
             seq += 10
             Whatif.create({
                 'scenario_id': self.id,
@@ -543,7 +549,7 @@ class JaotScenario(models.Model):
                 'solve_time_seconds': row.get('solve_time_seconds'),
                 'company_id': self.company_id.id,
             })
-        for row in analysis.get('decision_scenarios') or []:
+        for row in self._as_row_list(analysis.get('decision_scenarios')):
             seq += 10
             Whatif.create({
                 'scenario_id': self.id,
@@ -559,6 +565,15 @@ class JaotScenario(models.Model):
                 'solve_time_seconds': row.get('solve_time_seconds'),
                 'company_id': self.company_id.id,
             })
+
+    @staticmethod
+    def _as_row_list(section):
+        """A well-formed what-if row section is a list of mappings; anything
+        else (a string, a dict, a scalar) yields no rows so a malformed
+        envelope is tolerated instead of crashing the reconcile."""
+        if isinstance(section, list):
+            return [row for row in section if isinstance(row, dict)]
+        return []
 
     def _finalize_from_execution(self, config):
         self.ensure_one()

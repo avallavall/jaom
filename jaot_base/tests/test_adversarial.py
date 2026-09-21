@@ -7,7 +7,7 @@ nothing, and never 'applied' when nothing was written), so they fail while
 the engine is still broken and guard the fix."""
 from unittest import mock
 
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests import TransactionCase
 
 from ..models.jaot_config import JaotConfig
@@ -280,3 +280,76 @@ class TestAdversarial(TransactionCase):
             sc.action_revert()
         with self.assertRaises(UserError):
             sc.action_submit()
+
+    def test_whatif_malformed_analysis_reaches_terminal_state(self):
+        # A what-if analysis whose row section is not a list (a malformed
+        # server envelope) must not crash the reconcile and leave the
+        # scenario stuck in 'requested' to be re-polled and re-crashed
+        # forever; it must reach a terminal what-if state.
+        fake = FakeJaotClient(scenario_analysis_job={
+            'status': 'completed',
+            'analysis': {'rhs_scenarios': 'not-a-list'}})
+        sc = self._solved(fake=fake)
+        with mock.patch.object(JaotConfig, 'get_client', return_value=fake):
+            sc.action_run_whatif()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        sc.invalidate_recordset()
+        self.assertNotEqual(
+            sc.whatif_state, 'requested',
+            'a malformed what-if analysis must not leave the scenario '
+            'stuck in requested')
+
+    def test_cross_company_direct_read_is_denied(self):
+        # Beyond search isolation, a company-B user must not be able to
+        # READ a company-A scenario's fields via a direct browse (record
+        # rules are enforced on read as well as search) - otherwise browse
+        # would be a data leak around the company filter.
+        company_a = self._company()
+        company_b = self.env['res.company'].create({'name': 'IsoB2'})
+        recipe_a, _ = make_toys(self.env, company_a)
+        make_config(self.env, company_a)
+        sc_a = self.env['jaot.scenario'].create({
+            'name': 'IsoA2', 'recipe_id': recipe_a.id,
+            'company_id': company_a.id})
+        user_b = self.env['res.users'].create({
+            'name': 'IsoB2 user', 'login': 'iso_b2_user_xyz',
+            'company_id': company_b.id,
+            'company_ids': [(6, 0, [company_b.id])],
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('jaot_base.group_user').id])],
+        })
+        with self.assertRaises(AccessError):
+            self.env['jaot.scenario'].with_user(user_b).browse(
+                sc_a.id).name
+
+    def test_child_records_are_isolated_across_companies(self):
+        # The company isolation must extend to the scenario's plan LINES,
+        # not just the header: a company-B user must not be able to search
+        # the lines of a company-A scenario (they carry the parent's
+        # company and are filtered by the same record rules).
+        company_a = self._company()
+        company_b = self.env['res.company'].create({'name': 'IsoC'})
+        recipe_a, _ = make_toys(self.env, company_a)
+        make_config(self.env, company_a)
+        fake = FakeJaotClient()
+        sc_a = self.env['jaot.scenario'].create({
+            'name': 'IsoC A', 'recipe_id': recipe_a.id,
+            'company_id': company_a.id})
+        with mock.patch.object(JaotConfig, 'get_client', return_value=fake):
+            sc_a.action_submit()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        sc_a.invalidate_recordset()
+        self.assertTrue(sc_a.scenario_line_ids)
+        user_b = self.env['res.users'].create({
+            'name': 'IsoC user', 'login': 'iso_c_user_xyz',
+            'company_id': company_b.id,
+            'company_ids': [(6, 0, [company_b.id])],
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('jaot_base.group_user').id])],
+        })
+        env_b = self.env['jaot.scenario.line'].with_user(user_b)
+        self.assertFalse(
+            env_b.search([('scenario_id', '=', sc_a.id)]),
+            'a company-B user must not see a company-A scenario lines')

@@ -4,6 +4,10 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- Fix: a what-if analysis that comes back in a malformed shape no longer
+  wedges the scenario stuck in "requested" (re-polled and re-crashed on
+  every cron run) — the bad rows are skipped and the analysis reaches a
+  terminal state instead.
 - Fix: applying a scenario whose decision writes through a dotted field
   path no longer silently drops the write (and logs it as if it
   succeeded) when an intermediate record is missing — it now fails with
