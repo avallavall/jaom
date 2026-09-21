@@ -240,3 +240,19 @@ class TestAdversarial(TransactionCase):
         self.assertTrue(
             env_b.search([('id', '=', sc_b.id)]),
             'a company-B user must see their own company scenario')
+
+    def test_submit_with_empty_dataset_is_clean_error(self):
+        # Solving a scenario whose source records are all gone must raise a
+        # clean UserError and leave the scenario in draft — not crash, and
+        # not mark it queued/failed. (Distinct from an infeasible solve: the
+        # problem simply has no decision variables.)
+        recipe, _items = make_toys(self.env, self._company())
+        make_config(self.env, self._company())
+        sc = self.env['jaot.scenario'].create({
+            'name': 'Empty', 'recipe_id': recipe.id,
+            'company_id': self._company().id})
+        self.env['jaot.demo.item'].search([]).unlink()
+        with self.assertRaises(UserError):
+            sc.action_submit()
+        sc.invalidate_recordset()
+        self.assertEqual(sc.state, 'draft')
