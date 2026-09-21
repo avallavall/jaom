@@ -4,6 +4,10 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- Fix: applying a scenario is now all-or-nothing. If a write fails
+  part-way, the whole apply rolls back (no partial plan left behind), and
+  if none of the plan's target records still exist, the scenario is not
+  marked applied.
 - Fix: the background reconcile job that polls submitted scenarios now
   actually fires — it was silently erroring on every run, so a queued
   solve only got picked up when reconciled by hand.

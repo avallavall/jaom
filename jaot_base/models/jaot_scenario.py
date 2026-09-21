@@ -798,8 +798,10 @@ class JaotScenario(models.Model):
 
     def action_apply(self):
         """solved -> applied: write every line's decision to the Odoo records
-        in batches inside savepoints, logging before/after to
-        jaot.apply.log (SPECS §4.5, §7.5)."""
+        atomically inside a single savepoint, logging before/after to
+        jaot.apply.log (SPECS §4.5, §7.5). Any failure rolls the whole apply
+        back (no partial plan), and a scenario whose target records all go
+        missing is never marked applied (there would be nothing to revert)."""
         self.ensure_one()
         if self.state != 'solved':
             raise UserError(_("Only solved scenarios can be applied."))
@@ -810,11 +812,11 @@ class JaotScenario(models.Model):
         now = fields.Datetime.now()
         log_model = self.env['jaot.apply.log']
         applied = 0
-        for i, line in enumerate(lines, start=1):
-            rec = self.env[line.res_model].browse(line.res_id)
-            if not rec.exists():
-                continue
-            with self.env.cr.savepoint():
+        with self.env.cr.savepoint():
+            for i, line in enumerate(lines, start=1):
+                rec = self.env[line.res_model].browse(line.res_id)
+                if not rec.exists():
+                    continue
                 for field_path, value in line.decision.items():
                     before_raw = self._read_field_path(rec, field_path)
                     before = self._json_safe(before_raw)
@@ -853,13 +855,17 @@ class JaotScenario(models.Model):
                         'applied_at': now,
                         'company_id': self.company_id.id,
                     })
-            applied += 1
-        self.write({
-            'applied': True,
-            'applied_at': now,
-            'applied_by': self.env.user.id,
-            'state': 'applied',
-        })
+                applied += 1
+            if applied == 0:
+                raise UserError(_(
+                    "None of the plan's target records exist any more; "
+                    "the scenario has not been applied."))
+            self.write({
+                'applied': True,
+                'applied_at': now,
+                'applied_by': self.env.user.id,
+                'state': 'applied',
+            })
         self.message_post(body=_("Applied %(n)s line(s).", n=applied))
         return self
 
