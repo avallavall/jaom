@@ -4,6 +4,10 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- Fix: the scenario actions (Solve, Apply, Revert, baseline, what-if,
+  staleness check) are now access-checked at the API level, so a
+  read-only user cannot trigger them — before, the denial depended on a
+  downstream write failing.
 - Fix: the plain-language presentation never leaks a referenced record's
   database id — a viewer without access to that record (e.g. the delivery
   vehicle) or a deleted one now sees a safe generic label instead of a raw

@@ -341,10 +341,22 @@ class JaotScenario(models.Model):
     # ------------------------------------------------------------------
     # lifecycle (SPECS §4.4)
     # ------------------------------------------------------------------
+    def _check_modify_access(self):
+        """The lifecycle actions mutate records; an RPC call does not pass
+        through the view's button gating, so enforce the write ACL here
+        (manager or system admin) instead of relying on a downstream write
+        to happen to fail."""
+        user = self.env.user
+        if (not user.has_group('jaot_base.group_manager')
+                and not user.has_group('base.group_system')):
+            raise AccessError(_(
+                "You are not allowed to modify JAOT scenarios."))
+
     def action_submit(self):
         """draft -> queued: extract, formulate, capture the payload, submit
         to JAOT async (never blocks on the solve)."""
         self.ensure_one()
+        self._check_modify_access()
         if self.state != 'draft':
             raise UserError(_("Only draft scenarios can be submitted."))
         config = self.env['jaot.config']._require_config(self.company_id)
@@ -396,6 +408,7 @@ class JaotScenario(models.Model):
         every decision pinned to the incumbent plan; once it is solved, the
         KPI delta is written back onto this scenario by the reconcile."""
         self.ensure_one()
+        self._check_modify_access()
         if self.state != 'solved':
             raise UserError(_("Only a solved scenario can be baselined."))
         if self.baseline_scenario_id:
@@ -417,6 +430,7 @@ class JaotScenario(models.Model):
         execution and mark it requested. The reconcile cron polls the job
         and stores the rows (SPECS §10.1: the re-solves run out of band)."""
         self.ensure_one()
+        self._check_modify_access()
         if self.state not in ('solved', 'applied'):
             raise UserError(_("Only a solved scenario can be analyzed."))
         if not self.jaot_execution_id:
@@ -441,6 +455,7 @@ class JaotScenario(models.Model):
     def action_cancel(self):
         """queued/solving -> cancelled: POST …/cancel on the JAOT task."""
         self.ensure_one()
+        self._check_modify_access()
         if self.state not in ('queued', 'solving'):
             raise UserError(_(
                 "Only queued or solving scenarios can be cancelled."))
@@ -457,6 +472,7 @@ class JaotScenario(models.Model):
     def action_check_staleness(self):
         """Re-hash the extracted data and flag staleness (SPECS §4.6)."""
         self.ensure_one()
+        self._check_modify_access()
         _snap, snap_hash, _bs = self._extract_snapshot()
         stale = (snap_hash != self.data_snapshot_hash)
         self.data_stale = stale
@@ -887,6 +903,7 @@ class JaotScenario(models.Model):
         back (no partial plan), and a scenario whose target records all go
         missing is never marked applied (there would be nothing to revert)."""
         self.ensure_one()
+        self._check_modify_access()
         if self.state != 'solved':
             raise UserError(_("Only solved scenarios can be applied."))
         lines = self.scenario_line_ids.filtered(
@@ -958,6 +975,7 @@ class JaotScenario(models.Model):
         same machinery (SPECS §4.5: revertible), atomically inside one
         savepoint so a failure on any change restores none of them."""
         self.ensure_one()
+        self._check_modify_access()
         if self.state != 'applied':
             raise UserError(_("Only applied scenarios can be reverted."))
         logs = self.env['jaot.apply.log'].search([
@@ -990,7 +1008,7 @@ class JaotScenarioLine(models.Model):
     sequence = fields.Integer(default=10)
     res_model = fields.Char(string='Odoo model')
     res_id = fields.Integer(string='Odoo record id')
-    decision = fields.Json(string='Decision')
+    decision = fields.Json(string='Decision (raw)')
     kpi_contribution = fields.Float()
     delta_vs_baseline = fields.Json(string='Delta vs baseline')
     note = fields.Char()
