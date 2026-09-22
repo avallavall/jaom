@@ -51,7 +51,7 @@ class TestVrpE2E(TransactionCase):
             'move_ids': [(0, 0, {
                 'product_id': product.id,
                 'product_uom': product.uom_id.id,
-                'quantity': 1.0,
+                'product_uom_qty': 1.0,
             })],
         })
         picking.action_confirm()
@@ -227,6 +227,89 @@ class TestVrpE2E(TransactionCase):
         self.assertTrue(lines[pickings[1].id].delta_vs_baseline)
         self.assertTrue(lines[pickings[2].id].delta_vs_baseline)
         self.assertFalse(lines[pickings[0].id].delta_vs_baseline)
+
+    def test_reoptimize_pins_done_legs(self):
+        """Intraday re-optimization (SPECS 13.4): serve a prefix of the
+        applied tour, flag the staleness, re-optimize. The served legs keep
+        their vehicle and position; the KPI delta against the frozen plan
+        and the per-line diff land on the re-route scenario; apply/revert
+        round-trips without disturbing the served pickings' plan."""
+        from odoo.exceptions import UserError
+        self._ensure_config()
+        _wh, pickings, vehicle = self._dataset(n_orders=3)
+        sc = self._scenario()
+        fake = FakeVrpClient()
+        with self._patch_client(fake):
+            sc.action_submit()
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        self.assertEqual(sc.state, 'solved')
+        sc.action_apply()
+        self.assertEqual(sc.state, 'applied')
+
+        # guard: a scenario that is not applied cannot be re-optimized
+        guard = self._scenario()
+        with self.assertRaises(UserError):
+            guard.action_reoptimize()
+
+        # serve the first two stops of the applied tour
+        tour = sorted(sc.scenario_line_ids,
+                      key=lambda l: l.decision['jaot_route_sequence'])
+        done = [self.env['stock.picking'].browse(l.res_id) for l in tour[:2]]
+        for p in done:
+            for m in p.move_ids:
+                m._set_quantity_done(m.product_qty)
+            p.button_validate()
+        self.assertTrue(all(p.state == 'done' for p in done))
+        # the done pickings leave the extraction domain -> stale
+        sc.action_check_staleness()
+        self.assertTrue(sc.data_stale)
+
+        with self._patch_client(fake):
+            child = sc.action_reoptimize()
+        self.assertEqual(child.state, 'queued')
+        self.assertEqual(child.reoptimize_of_id.id, sc.id)
+        self.assertEqual(child.reoptimize_done, [
+            {'res_id': done[0].id, 'vehicle': vehicle.id, 'sequence': 1},
+            {'res_id': done[1].id, 'vehicle': vehicle.id, 'sequence': 2},
+        ])
+        with self._patch_client(fake):
+            self.env['jaot.scenario'].reconcile_jaot_scenarios()
+        self.assertEqual(child.state, 'solved')
+        self.assertEqual(child.line_count, 3)
+
+        # the served legs keep their vehicle and position, with no diff
+        parent_lines = {l.res_id: l.decision for l in sc.scenario_line_ids}
+        child_lines = {l.res_id: l for l in child.scenario_line_ids}
+        for p in done:
+            self.assertEqual(child_lines[p.id].decision,
+                             parent_lines[p.id])
+            self.assertFalse(child_lines[p.id].delta_vs_baseline)
+        # the KPI delta against the frozen plan is stored on the child
+        ks = child.kpi_summary
+        self.assertEqual(ks['baseline_objective'], sc.objective_value)
+        self.assertEqual(ks['optimized_objective'], child.objective_value)
+        self.assertIn('delta_vs_baseline', ks)
+
+        # apply the re-route: served pickings keep their plan, the scenario
+        # link moves to the child
+        child.action_apply()
+        self.assertEqual(child.state, 'applied')
+        for p in pickings:
+            p.invalidate_recordset()
+            self.assertEqual(p.jaot_vehicle_id, vehicle)
+            self.assertGreater(p.jaot_route_sequence, 0)
+            self.assertEqual(p.jaot_scenario_id, child)
+        # revert restores the frozen plan
+        child.action_revert()
+        self.assertEqual(child.state, 'solved')
+        for p in pickings:
+            p.invalidate_recordset()
+            self.assertEqual(p.jaot_vehicle_id, vehicle)
+            self.assertGreater(p.jaot_route_sequence, 0)
+            self.assertEqual(p.jaot_scenario_id, sc)
+        # leave the dataset clean
+        sc.action_revert()
+        self.assertEqual(sc.state, 'solved')
 
     def test_explanation_on_solve(self):
         """SPECS 13.1: the solved scenario carries the manager-readable

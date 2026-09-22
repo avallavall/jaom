@@ -7,7 +7,7 @@ modules. One case per user flow; the runner exits `0` only when every case
 passes and writes per-case results (plus a screenshot per failure) to
 `dev/e2e/results/e2e_results.json` (git-ignored).
 
-## What it exercises (41 cases)
+## What it exercises (42 cases)
 
 **Connection management**
 - Manager login and navigation.
@@ -86,6 +86,11 @@ passes and writes per-case results (plus a screenshot per failure) to
   *Run* button and via RPC, mirror the child run's state, and store the
   comparison vs the parent (objective delta, lines changed, per-line
   vehicle deltas).
+- Intraday re-optimization: an applied routing plan goes stale after part
+  of it is served; *Re-optimize* (stale-state gated) pins the served legs
+  to their vehicle and position, re-routes the rest, stores the delta vs
+  the frozen plan on the re-route scenario, and apply/revert round-trips
+  without disturbing the served pickings.
 - Plan explanation: a solved MRP scenario exposes the *Explanation* form
   section — objective terms (setups / inventory holding) and the tightly
   used constraints in plain language, no machine identifiers leaking.

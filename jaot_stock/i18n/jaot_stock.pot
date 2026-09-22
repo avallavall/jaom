@@ -6,14 +6,20 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0-20260908\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-22 18:28+0000\n"
-"PO-Revision-Date: 2026-09-22 18:28+0000\n"
+"POT-Creation-Date: 2026-09-22 21:01+0000\n"
+"PO-Revision-Date: 2026-09-22 21:01+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: jaot_stock
+#. odoo-python
+#: code:addons/jaot_stock/jaot_vrp_formulation.py:0
+msgid "%(p)s keeps its vehicle and stop"
+msgstr ""
 
 #. module: jaot_stock
 #. odoo-python
@@ -40,6 +46,12 @@ msgid "A picking"
 msgstr ""
 
 #. module: jaot_stock
+#. odoo-python
+#: code:addons/jaot_stock/jaot_vrp_formulation.py:0
+msgid "A served picking"
+msgstr ""
+
+#. module: jaot_stock
 #: model_terms:ir.actions.act_window,help:jaot_stock.action_jaot_scenario_vrp
 msgid ""
 "Create a routing scenario, solve it, review the per-picking\n"
@@ -52,13 +64,20 @@ msgid "Delivery routing (VRP)"
 msgstr ""
 
 #. module: jaot_stock
+#: model:ir.model.fields,field_description:jaot_stock.field_jaot_scenario__display_name
 #: model:ir.model.fields,field_description:jaot_stock.field_stock_picking__display_name
 msgid "Display Name"
 msgstr ""
 
 #. module: jaot_stock
+#: model:ir.model.fields,field_description:jaot_stock.field_jaot_scenario__id
 #: model:ir.model.fields,field_description:jaot_stock.field_stock_picking__id
 msgid "ID"
+msgstr ""
+
+#. module: jaot_stock
+#: model:ir.model.fields,field_description:jaot_stock.field_jaot_scenario__is_vrp
+msgid "Is routing recipe"
 msgstr ""
 
 #. module: jaot_stock
@@ -72,6 +91,7 @@ msgid "JAOT routing"
 msgstr ""
 
 #. module: jaot_stock
+#: model:ir.model,name:jaot_stock.model_jaot_scenario
 #: model:ir.model.fields,field_description:jaot_stock.field_stock_picking__jaot_scenario_id
 msgid "JAOT scenario"
 msgstr ""
@@ -83,8 +103,25 @@ msgstr ""
 
 #. module: jaot_stock
 #. odoo-python
+#: code:addons/jaot_stock/models/jaot_scenario.py:0
+msgid "No served legs to pin: none of the plan's pickings is done yet."
+msgstr ""
+
+#. module: jaot_stock
+#. odoo-python
+#: code:addons/jaot_stock/models/jaot_scenario.py:0
+msgid "Only an applied scenario can be re-optimized."
+msgstr ""
+
+#. module: jaot_stock
+#. odoo-python
 #: code:addons/jaot_stock/jaot_vrp_formulation.py:0
 msgid "Picking %(name)s"
+msgstr ""
+
+#. module: jaot_stock
+#: model:ir.model.fields,field_description:jaot_stock.field_jaot_scenario__reoptimize_done
+msgid "Pinned served legs"
 msgstr ""
 
 #. module: jaot_stock
@@ -95,9 +132,52 @@ msgid ""
 msgstr ""
 
 #. module: jaot_stock
+#. odoo-python
+#: code:addons/jaot_stock/models/jaot_scenario.py:0
+msgid "Re-optimization is only available for the routing (vrp) recipe."
+msgstr ""
+
+#. module: jaot_stock
+#: model_terms:ir.ui.view,arch_db:jaot_stock.view_jaot_scenario_form
+msgid "Re-optimize"
+msgstr ""
+
+#. module: jaot_stock
+#: model:ir.model.fields,field_description:jaot_stock.field_jaot_scenario__reoptimize_of_id
+msgid "Re-optimized from"
+msgstr ""
+
+#. module: jaot_stock
+#: model_terms:ir.ui.view,arch_db:jaot_stock.view_jaot_scenario_form
+msgid ""
+"Re-route the remaining pickings? Served legs keep their vehicle and "
+"position; only the changed pickings are re-planned."
+msgstr ""
+
+#. module: jaot_stock
 #: model:ir.actions.act_window,name:jaot_stock.action_jaot_scenario_vrp
 #: model:ir.ui.menu,name:jaot_stock.menu_jaot_scenario_vrp
 msgid "Routing scenarios"
+msgstr ""
+
+#. module: jaot_stock
+#: model:ir.model.fields,help:jaot_stock.field_jaot_scenario__reoptimize_done
+msgid ""
+"Served legs of the frozen plan pinned in this re-route: a list of {res_id, "
+"vehicle, sequence} per done picking."
+msgstr ""
+
+#. module: jaot_stock
+#. odoo-python
+#: code:addons/jaot_stock/jaot_vrp_formulation.py:0
+msgid "Served picking %(name)s"
+msgstr ""
+
+#. module: jaot_stock
+#: model:ir.model.fields,help:jaot_stock.field_jaot_scenario__reoptimize_of_id
+msgid ""
+"The applied routing plan this scenario re-optimizes: the served legs of that"
+" plan stay pinned, the remaining pickings are re-routed (SPECS 13.4)."
 msgstr ""
 
 #. module: jaot_stock
@@ -105,6 +185,13 @@ msgstr ""
 msgid ""
 "The last scenario whose applied solution wrote the routing fields for this "
 "picking."
+msgstr ""
+
+#. module: jaot_stock
+#. odoo-python
+#: code:addons/jaot_stock/models/jaot_scenario.py:0
+msgid ""
+"The source data is not stale: run the staleness check before re-optimizing."
 msgstr ""
 
 #. module: jaot_stock

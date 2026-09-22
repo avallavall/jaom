@@ -49,6 +49,10 @@ msgid "ID"
 msgstr "ID"
 
 #. module: jaot_stock
+msgid "Is routing recipe"
+msgstr "Es la receta de reparto"
+
+#. module: jaot_stock
 msgid "JAOT route position"
 msgstr "Posición en la ruta JAOT"
 
@@ -63,6 +67,70 @@ msgstr "Escenario JAOT"
 #. module: jaot_stock
 msgid "JAOT vehicle"
 msgstr "Vehículo JAOT"
+
+#. module: jaot_stock
+msgid "%(p)s keeps its vehicle and stop"
+msgstr "El albarán %(p)s mantiene su vehículo y su parada"
+
+#. module: jaot_stock
+msgid "A served picking"
+msgstr "Un albarán ya servido"
+
+#. module: jaot_stock
+msgid "No served legs to pin: none of the plan's pickings is done yet."
+msgstr "No hay tramos servidos que fijar: ninguno de los albaranes del plan está aún completado."
+
+#. module: jaot_stock
+msgid "Only an applied scenario can be re-optimized."
+msgstr "Solo un escenario aplicado puede reoptimizarse."
+
+#. module: jaot_stock
+msgid "Pinned served legs"
+msgstr "Tramos servidos fijados"
+
+#. module: jaot_stock
+msgid "Re-optimization is only available for the routing (vrp) recipe."
+msgstr "La reoptimización solo está disponible para la receta de reparto (vrp)."
+
+#. module: jaot_stock
+msgid "Re-optimize"
+msgstr "Reoptimizar"
+
+#. module: jaot_stock
+msgid "Re-optimized from"
+msgstr "Reoptimizado desde"
+
+#. module: jaot_stock
+msgid ""
+"Re-route the remaining pickings? Served legs keep their vehicle and "
+"position; only the changed pickings are re-planned."
+msgstr ""
+"¿Replanificar los albaranes restantes? Los tramos servidos mantienen su "
+"vehículo y su posición; solo se replanifican los albaranes que cambian."
+
+#. module: jaot_stock
+msgid "Served picking %(name)s"
+msgstr "Albarán servido %(name)s"
+
+#. module: jaot_stock
+msgid "Served legs of the frozen plan pinned in this re-route: a list of {res_id, vehicle, sequence} per done picking."
+msgstr "Tramos servidos del plan congelado fijados en esta replanificación: una lista de {res_id, vehicle, sequence} por albarán completado."
+
+#. module: jaot_stock
+msgid ""
+"The applied routing plan this scenario re-optimizes: the served legs of that"
+" plan stay pinned, the remaining pickings are re-routed (SPECS 13.4)."
+msgstr ""
+"El plan de reparto aplicado que este escenario reoptimiza: los tramos "
+"servidos de ese plan quedan fijados y los albaranes restantes se "
+"replanifican (SPECS 13.4)."
+
+#. module: jaot_stock
+msgid ""
+"The source data is not stale: run the staleness check before re-optimizing."
+msgstr ""
+"Los datos de origen no están desactualizados: ejecuta la comprobación de "
+"caducidad antes de reoptimizar."
 
 #. module: jaot_stock
 msgid "Picking %(name)s"

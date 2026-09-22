@@ -4,6 +4,11 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- New: intraday re-optimization for routing — when an applied delivery
+  plan goes stale because part of it was already served, the new
+  *Re-optimize* action re-plans only the remaining pickings: served stops
+  keep their vehicle and position, and the re-route scenario shows the
+  improvement versus the frozen plan.
 - New: Spanish (es_ES) translations for all three modules — users who
   select Spanish get the menus, form labels and generated messages in
   Spanish. The i18n CI check now also verifies that the committed

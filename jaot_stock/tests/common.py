@@ -77,9 +77,49 @@ class FakeVrpClient:
         orders = sorted(int(k) for k in
                         problem.get('metadata', {}).get('orders', {}))
         n = len(orders)
+        pins = [c for c in problem.get('constraints', [])
+                if c['name'].startswith('pin_')]
         fixes = [c for c in problem.get('constraints', [])
                  if c['name'].startswith('fix_')]
-        if fixes:
+        if pins:
+            # re-route (SPECS 13.4): walk the pinned prefix arcs
+            # (depot -> served stops); the remaining orders are appended in
+            # node order, the rest of the tour is free
+            next_node = {}
+            for c in pins:
+                _p, t, i, j = c['expression'].split(' = ')[0].split('_')
+                next_node[(int(t), int(i))] = int(j)
+            n_veh = len(problem.get('metadata', {}).get('vehicles', []))
+            tours = {}
+            pinned_nodes = set()
+            for t in range(n_veh):
+                node = 0
+                tour = []
+                while True:
+                    nxt = next_node.get((t, node))
+                    if nxt is None:
+                        break
+                    tour.append(nxt)
+                    pinned_nodes.add(nxt)
+                    node = nxt
+                tours[t] = tour
+            remaining = [k for k in range(1, n + 1)
+                         if k not in pinned_nodes]
+            # a vehicle with no chain takes the first remaining order, the
+            # first vehicle takes the rest (deterministic stand-in)
+            for t in range(n_veh):
+                if not tours[t] and remaining:
+                    tours[t].append(remaining.pop(0))
+            if remaining:
+                tours[0].extend(remaining)
+            values = {}
+            for t in range(n_veh):
+                nodes = [0] + tours[t] + [0]
+                for a, b in zip(nodes, nodes[1:]):
+                    values['x_%d_%d_%d' % (t, a, b)] = 1
+                for pos, k in enumerate(tours[t], start=1):
+                    values['u_%d_%d' % (t, k)] = pos
+        elif fixes:
             # baseline: return the pinned plan as-is
             values = {c['expression'].split(' = ')[0]:
                       int(c['expression'].split(' = ')[1])

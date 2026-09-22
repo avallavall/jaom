@@ -166,6 +166,54 @@ class TestVrpFormulation(TransactionCase):
                 visited.add(int(c['expression'].split(' = ')[0].split('_')[3]))
         self.assertNotIn(3, visited)
 
+    # -- intraday re-optimization (SPECS 13.4) ---------------------------
+    def test_pin_done_pins_prefix_arcs(self):
+        snap = _snapshot()
+        snap['fleet.vehicle'] = {100: {'vehicle': 100},
+                                 101: {'vehicle': 101}}
+        problem = Vrp().formulate(snap, {'pin_done': [
+            {'res_id': 1, 'vehicle': 100, 'sequence': 1},
+            {'res_id': 2, 'vehicle': 100, 'sequence': 2},
+        ]})
+        pins = {c['expression'].split(' = ')[0]:
+                int(c['expression'].split(' = ')[1])
+                for c in problem['constraints']
+                if c['name'].startswith('pin_')}
+        # vehicle 100 is t=0 (sorted res_id); node k is res_id k's
+        # position in sorted order. The pin is the tour prefix: depot ->
+        # 1 -> 2. The return leg (2 -> depot) and the unserved order 3
+        # stay free, and no baseline fixes are added.
+        self.assertEqual(pins, {'x_0_0_1': 1, 'x_0_1_2': 1})
+        self.assertFalse(any(c['name'].startswith('fix_')
+                             for c in problem['constraints']))
+
+    def test_pin_done_ignores_unknown_legs(self):
+        snap = _snapshot()
+        problem = Vrp().formulate(snap, {'pin_done': [
+            {'res_id': 99, 'vehicle': 100, 'sequence': 1},
+            {'res_id': 1, 'vehicle': 404, 'sequence': 2},
+        ]})
+        self.assertFalse(any(c['name'].startswith('pin_')
+                             for c in problem['constraints']))
+
+    def test_pin_explain_constraint_label(self):
+        snap = _snapshot()
+        snap['fleet.vehicle'] = {100: {'vehicle': 100},
+                                 101: {'vehicle': 101}}
+        problem = Vrp().formulate(snap, {'pin_done': [
+            {'res_id': 1, 'vehicle': 100, 'sequence': 1},
+        ]})
+        f = Vrp()
+        names = {('stock.picking', 1): 'PICK0001'}
+        self.assertEqual(
+            f.explain_constraint('pin_0_0_1', problem, names),
+            'Served picking PICK0001 keeps its vehicle and stop')
+        self.assertEqual(
+            f.explain_constraint('pin_0_0_1', problem, None),
+            'A served picking keeps its vehicle and stop')
+        # no order node behind the arc: no plain-language label
+        self.assertIsNone(f.explain_constraint('pin_0_0_0', problem, names))
+
     # -- plan explanation (SPECS 13.1) ------------------------------------
     def test_explain_objective_terms(self):
         problem = Vrp().formulate(_snapshot(), {})

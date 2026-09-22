@@ -20,4 +20,25 @@
               parent="stock.menu_stock_warehouse_mgmt"
               action="action_jaot_scenario_vrp"
               sequence="90"/>
+
+    <!-- Intraday re-optimization (SPECS 13.4): the Re-optimize button,
+         visible on an applied, stale routing scenario. -->
+    <record id="view_jaot_scenario_form" model="ir.ui.view">
+        <field name="name">jaot.scenario.form.vrp</field>
+        <field name="model">jaot.scenario</field>
+        <field name="inherit_id" ref="jaot_base.view_jaot_scenario_form"/>
+        <field name="arch" type="xml">
+            <button name="action_revert" position="after">
+                <button name="action_reoptimize" type="object"
+                        string="Re-optimize" class="btn-secondary"
+                        confirm="Re-route the remaining pickings? Served legs keep their vehicle and position; only the changed pickings are re-planned."
+                        invisible="state != 'applied' or not data_stale or not is_vrp"
+                        groups="jaot_base.group_manager"/>
+            </button>
+            <field name="name" position="after">
+                <!-- loaded so the modifier above can read it -->
+                <field name="is_vrp" invisible="1"/>
+            </field>
+        </field>
+    </record>
 </odoo>

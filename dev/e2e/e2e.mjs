@@ -1271,6 +1271,153 @@ case_('named_cases', async (ctx) => {
   }
 });
 
+case_('reoptimize_pins_done', async (ctx) => {
+  // Intraday re-optimization (SPECS 13.4, P9.4): an applied VRP plan goes
+  // stale when part of it is served. Re-optimize pins the served legs
+  // (vehicle + position) and re-routes only the rest; the delta against
+  // the frozen plan lands on the re-route scenario.
+  const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'vrp']], ['id']]))[0];
+  const sid = (await ctx.rpc('jaot.scenario', 'create',
+    [[{ name: `E2E REOPT ${Date.now()}`, recipe_id: recipe.id, company_id: 1 }]]))[0];
+  let child = null;
+  const picksAll = await ctx.rpc('stock.picking', 'search_read',
+    [[['picking_type_code', '=', 'outgoing'], ['state', 'in', ['confirmed', 'assigned']]], ['id']], {}, { limit: 20 });
+  assert(picksAll.length === 4, `expected 4 outgoing pickings, got ${picksAll.length}`);
+  const allIds = picksAll.map((p) => p.id);
+  let doneIds = [];
+  try {
+    await openForm(ctx.page, sid);
+    await clickBtn(ctx.page, 'Solve');
+    const row = await pollTo(ctx.rpc, sid, 'state', ['solved', 'failed']);
+    assert(row.state === 'solved', `re-optimize parent failed: ${row.jaot_error}`);
+    assert(row.line_count === 4, `expected 4 lines on the parent, got ${row.line_count}`);
+
+    await openForm(ctx.page, sid);
+    await clickBtn(ctx.page, 'Apply');
+    await confirmOk(ctx.page);
+    const applied = await readScenario(ctx.rpc, sid, ['state', 'objective_value']);
+    assert(applied.state === 'applied', `re-optimize parent apply failed: ${applied.state}`);
+    const parentObj = applied.objective_value;
+    const parentPlan = Object.fromEntries((await ctx.rpc('stock.picking', 'search_read',
+      [[['id', 'in', allIds]], ['id', 'jaot_vehicle_id', 'jaot_route_sequence', 'jaot_scenario_id']], {}, { limit: 20 }))
+      .map((p) => [p.id, [p.jaot_vehicle_id, p.jaot_route_sequence, p.jaot_scenario_id ? p.jaot_scenario_id[0] : null]]));
+
+    // serve two contiguous stops of the main tour (the vehicle carrying
+    // the most lines): the plan's data now changed -> stale.
+    const parentLines = await ctx.rpc('jaot.scenario.line', 'search_read',
+      [[['scenario_id', '=', sid]], ['res_id', 'decision']], {}, { limit: 10 });
+    const byVehicle = {};
+    for (const l of parentLines) {
+      const v = l.decision.jaot_vehicle_id;
+      (byVehicle[v] = byVehicle[v] || []).push(l);
+    }
+    const mainTour = Object.values(byVehicle).sort((a, b) => b.length - a.length)[0];
+    doneIds = mainTour.sort(
+      (a, b) => a.decision.jaot_route_sequence - b.decision.jaot_route_sequence)
+      .slice(0, 2).map((l) => l.res_id);
+    assert(doneIds.length === 2, `expected 2 done pickings, got ${JSON.stringify(doneIds)}`);
+    execSql(`UPDATE stock_picking SET state = 'done' WHERE id IN (${doneIds.join(',')})`);
+
+    await openForm(ctx.page, sid);
+    await clickBtn(ctx.page, 'Check staleness');
+    const stale = await readScenario(ctx.rpc, sid, ['data_stale']);
+    assert(stale.data_stale === true, 'data_stale not flagged after serving pickings');
+
+    // the Re-optimize button only appears once the plan is stale; the
+    // confirm dialog gates it like Apply/Revert.
+    await openForm(ctx.page, sid);
+    await clickBtn(ctx.page, 'Re-optimize');
+    await confirmOk(ctx.page);
+    child = (await ctx.rpc('jaot.scenario', 'search', [[['reoptimize_of_id', '=', sid]]]))[0];
+    assert(child, 're-route scenario not created');
+    const childMeta = (await ctx.rpc('jaot.scenario', 'search_read',
+      [[[ 'id', '=', child ]], ['reoptimize_done', 'state']]))[0];
+    assert(['queued', 'solving', 'solved'].includes(childMeta.state),
+      `re-route not submitted: ${childMeta.state}`);
+    const legs = (childMeta.reoptimize_done || [])
+      .map((x) => JSON.stringify(Object.keys(x).sort().reduce((o, k) => (o[k] = x[k], o), {})))
+      .sort();
+    const wantLegs = doneIds
+      .map((id) => {
+        const [v, s] = parentPlan[id];
+        const vid = Array.isArray(v) ? v[0] : v;
+        return JSON.stringify({ res_id: id, sequence: s, vehicle: vid });
+      }).sort();
+    assert(JSON.stringify(legs) === JSON.stringify(wantLegs),
+      `pinned legs wrong: ${legs.join(', ')} != ${wantLegs.join(', ')}`);
+
+    const crow = await pollTo(ctx.rpc, child, 'state', ['solved', 'failed']);
+    assert(crow.state === 'solved', `re-route failed: ${crow.jaot_error}`);
+    assert(crow.line_count === 4, `expected 4 lines on the re-route, got ${crow.line_count}`);
+
+    // the served legs keep their vehicle and position, with no diff; the
+    // delta against the frozen plan is stored on the re-route scenario.
+    const childLines = await ctx.rpc('jaot.scenario.line', 'search_read',
+      [[['scenario_id', '=', child]], ['res_id', 'decision', 'delta_vs_baseline']], {}, { limit: 10 });
+    const plines = Object.fromEntries(parentLines.map((l) => [l.res_id, l.decision]));
+    for (const l of childLines) {
+      if (!doneIds.includes(l.res_id)) continue;
+      assert(l.decision.jaot_vehicle_id === plines[l.res_id].jaot_vehicle_id
+        && l.decision.jaot_route_sequence === plines[l.res_id].jaot_route_sequence,
+        `pinned picking ${l.res_id} moved: ${JSON.stringify(l.decision)}`);
+      assert(!l.delta_vs_baseline, `pinned picking ${l.res_id} has a delta: ${JSON.stringify(l.delta_vs_baseline)}`);
+    }
+    const kpi = (await ctx.rpc('jaot.scenario', 'read', [[child], ['kpi_summary', 'objective_value']]))[0];
+    assert(kpi.kpi_summary && kpi.kpi_summary.baseline_objective === parentObj,
+      `frozen objective not stored: ${JSON.stringify(kpi.kpi_summary)}`);
+    assert(kpi.kpi_summary.optimized_objective === kpi.objective_value,
+      `optimized objective mismatch: ${JSON.stringify(kpi.kpi_summary)}`);
+    assert(typeof kpi.kpi_summary.delta_vs_baseline === 'number',
+      `no delta_vs_baseline in the KPI summary: ${JSON.stringify(kpi.kpi_summary)}`);
+
+    // Apply the re-route: every picking links to the re-route scenario and
+    // the served legs are undisturbed.
+    await openForm(ctx.page, child);
+    await clickBtn(ctx.page, 'Apply');
+    await confirmOk(ctx.page);
+    const childApplied = await readScenario(ctx.rpc, child, ['state']);
+    assert(childApplied.state === 'applied', `re-route apply failed: ${childApplied.state}`);
+    const after = await ctx.rpc('stock.picking', 'search_read',
+      [[['id', 'in', allIds]], ['id', 'jaot_vehicle_id', 'jaot_route_sequence', 'jaot_scenario_id']], {}, { limit: 20 });
+    for (const p of after) {
+      const link = p.jaot_scenario_id ? p.jaot_scenario_id[0] : null;
+      assert(link === child, `picking ${p.id} links to ${link}, expected ${child}`);
+      if (doneIds.includes(p.id)) {
+        const prev = parentPlan[p.id];
+        const vid = p.jaot_vehicle_id ? p.jaot_vehicle_id[0] : null;
+        const prevVid = Array.isArray(prev[0]) ? prev[0][0] : prev[0];
+        assert(vid === prevVid && p.jaot_route_sequence === prev[1],
+          `served picking ${p.id} disturbed by the re-route apply`);
+      }
+    }
+
+    // Revert restores the frozen plan exactly.
+    await openForm(ctx.page, child);
+    await clickBtn(ctx.page, 'Revert');
+    await confirmOk(ctx.page);
+    const childReverted = await readScenario(ctx.rpc, child, ['state']);
+    assert(childReverted.state === 'solved', `re-route revert failed: ${childReverted.state}`);
+    const restored = await ctx.rpc('stock.picking', 'search_read',
+      [[['id', 'in', allIds]], ['id', 'jaot_vehicle_id', 'jaot_route_sequence', 'jaot_scenario_id']], {}, { limit: 20 });
+    for (const p of restored) {
+      const prev = parentPlan[p.id];
+      const now = [p.jaot_vehicle_id, p.jaot_route_sequence, p.jaot_scenario_id ? p.jaot_scenario_id[0] : null];
+      assert(JSON.stringify(now) === JSON.stringify(prev),
+        `picking ${p.id} not restored to the frozen plan: ${JSON.stringify(now)} != ${JSON.stringify(prev)}`);
+    }
+  } finally {
+    // leave the dataset clean: revert the parent (if still applied) and
+    // reset every picking to a plain confirmed state.
+    const state = (await ctx.rpc('jaot.scenario', 'read', [[sid], ['state']]))[0].state;
+    if (state === 'applied') await ctx.rpc('jaot.scenario', 'action_revert', [[sid]]);
+    if (child) {
+      const cstate = (await ctx.rpc('jaot.scenario', 'read', [[child], ['state']]))[0].state;
+      if (cstate === 'applied') await ctx.rpc('jaot.scenario', 'action_revert', [[child]]);
+    }
+    execSql(`UPDATE stock_picking SET state = 'confirmed', jaot_vehicle_id = NULL, jaot_route_sequence = 0, jaot_scenario_id = NULL WHERE id IN (${allIds.join(',')})`);
+  }
+});
+
 case_('staleness_detection', async (ctx) => {
   const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'mrp']], ['id']]))[0];
   const sid = (await ctx.rpc('jaot.scenario', 'create', [[{ name: `E2E STALE ${Date.now()}`, recipe_id: recipe.id, company_id: 1 }]]))[0];

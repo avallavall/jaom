@@ -189,6 +189,32 @@ class Vrp(JaotFormulation):
                             'name': f'fix_{t}_{i}_{j}',
                             'expression': f'x_{t}_{i}_{j} = {pin}'})
 
+        # Intraday re-optimization (SPECS 13.4): a re-route scenario pins
+        # the already-served legs of the frozen plan to their vehicle and
+        # position. Only the prefix arcs of each pinned tour are fixed
+        # (depot -> stop 1 -> ... -> stop M); the return leg and the
+        # remaining pickings stay free, so the rest of the route is
+        # re-optimized. Legs are the scenario's ``pin_done`` entries
+        # ({res_id, vehicle, sequence}).
+        pins = config_meta.get('pin_done')
+        if pins:
+            vehicle_index = {vid: t for t, vid in enumerate(vehicle_ids)}
+            tours = {}
+            for leg in pins:
+                oid = int(leg.get('res_id') or 0)
+                t = vehicle_index.get(int(leg.get('vehicle') or 0))
+                seq = int(leg.get('sequence') or 0)
+                if oid not in order_ids or t is None or not seq:
+                    continue
+                tours.setdefault(t, []).append(
+                    (seq, order_ids.index(oid) + 1))
+            for t, tour in tours.items():
+                arc_nodes = [0] + [k for _seq, k in sorted(tour)]
+                for a, b in zip(arc_nodes, arc_nodes[1:]):
+                    constraints.append({
+                        'name': f'pin_{t}_{a}_{b}',
+                        'expression': f'x_{t}_{a}_{b} = 1'})
+
         metadata = {
             'depot': {'res_id': depot_res_id,
                       'lat': depot_lat, 'lng': depot_lng},
@@ -340,6 +366,25 @@ class Vrp(JaotFormulation):
                 return None
             return _('%(v)s is at its load limit',
                     v=self._vehicle_label(t, vehicles, record_names))
+        if name.startswith('pin_'):
+            # a re-route pin into an order node: the served picking keeps
+            # its vehicle and stop
+            parts = name.split('_')
+            if len(parts) != 4:
+                return None
+            try:
+                k = int(parts[3])
+            except ValueError:
+                return None
+            if not 1 <= k <= len(order_ids):
+                return None
+            oid = order_ids[k - 1]
+            pname = None
+            if record_names:
+                pname = record_names.get((self._ORDER_MODEL, int(oid)))
+            picking = (_('Served picking %(name)s', name=pname) if pname
+                       else _('A served picking'))
+            return _('%(p)s keeps its vehicle and stop', p=picking)
         # flow / depot in-out / MTZ / baseline fixes: structural,
         # nothing for a manager
         return None
