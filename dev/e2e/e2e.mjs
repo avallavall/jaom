@@ -8,8 +8,11 @@
 //
 // Case groups:
 //   connection_*   connection lifecycle, key storage, failure paths, UI save
+//   cross_company_isolation  company isolation, missing-connection refusal
 //   binding_*, recipe_*  recipe/binding authoring validation
+//   toy_lifecycle  the base module's own domain (knapsack over demo items)
 //   scenario_*, lifecycle_*, mrp_*, vrp_*  the full scenario lifecycles
+//   kpi_headline_objective_only, apply_all_missing, failed_state_guards
 //   security_*     role/ACL positive and negative controls
 //   chatter_audit, apply_log_view, scenario_list_view  audit + rendering
 import { chromium } from 'playwright';
@@ -137,6 +140,31 @@ async function confirmOk(page, timeout = 12000) {
   await ok.first().waitFor({ state: 'visible', timeout });
   await ok.first().click();
   await page.waitForTimeout(2500);
+}
+
+// Odoo renders `Text` fields as <textarea> and `Many2one` fields as an
+// autocomplete <input>: the displayed value lives in the element's `.value`,
+// NOT in text nodes, so text-based locators (innerText / getByText / hasText)
+// can never match it. Wait until the widget's input/textarea `.value` contains
+// `expected`, and return it. Throws if it never does.
+async function waitForWidgetValue(page, field, expected, timeout = 15000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    const val = await page.evaluate(([f, exp]) => {
+      for (const form of document.querySelectorAll('.o_form_view')) {
+        if (!(form.offsetWidth || form.offsetHeight)) continue; // skip stale hidden nodes
+        const w = form.querySelector(`[name="${f}"]`);
+        if (!w) continue;
+        const el = w.querySelector('textarea') || w.querySelector('input');
+        const v = el ? el.value : (w.innerText || '');
+        if (typeof v === 'string' && v.includes(exp)) return v;
+      }
+      return null;
+    }, [field, expected]);
+    if (val !== null) return val;
+    await sleep(500);
+  }
+  throw new Error(`widget "${field}" did not show "${expected}" within ${timeout}ms`);
 }
 
 async function shot(page, name) {
@@ -313,6 +341,41 @@ case_('uniqueness_constraints', async (ctx) => {
     () => ctx.rpc('jaot.recipe', 'create', [[{ name: 'Dup', code: 'mrp', domain: 'mrp', company_id: 1 }]]));
 });
 
+case_('cross_company_isolation', async (ctx) => {
+  // SPECS §7.2: a scenario never mixes companies, and both failure modes
+  // are explicit errors, not a silent union of companies' data.
+  const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'mrp']], ['id']]))[0];
+  // 1) Company 8 (E2E B) has no mrp bindings: submit must refuse.
+  const s8 = (await ctx.rpc('jaot.scenario', 'create', [[{
+    name: `E2E XCO ${Date.now()}`, recipe_id: recipe.id, company_id: 8,
+  }]]))[0];
+  await expectError(/no binding for this company/i,
+    () => ctx.rpc('jaot.scenario', 'action_submit', [[s8]]));
+  // 2) A company with no connection at all: the submit names the missing
+  //    connection instead of guessing one.
+  const cfg8 = await findConfig(ctx.rpc, 8);
+  assert(cfg8, 'company-8 connection missing (earlier cases create it)');
+  let s8b;
+  try {
+    await ctx.rpc('jaot.config', 'unlink', [[cfg8.id]]);
+    s8b = (await ctx.rpc('jaot.scenario', 'create', [[{
+      name: `E2E XCON ${Date.now()}`, recipe_id: recipe.id, company_id: 8,
+    }]]))[0];
+    await expectError(/No JAOT connection configured/i,
+      () => ctx.rpc('jaot.scenario', 'action_submit', [[s8b]]));
+  } finally {
+    // restore the canonical state (bad endpoint, real key) for the other cases
+    await ctx.rpc('jaot.config', 'create', [[{
+      company_id: 8, endpoint_url: BAD_ENDPOINT, api_key_input: API_KEY,
+    }]]);
+  }
+  // both scenarios must still be draft: nothing was ever submitted
+  for (const id of [s8, s8b]) {
+    const st = (await ctx.rpc('jaot.scenario', 'read', [[id], ['state']]))[0].state;
+    assert(st === 'draft', `scenario ${id} state after refused submit: ${st}`);
+  }
+});
+
 case_('binding_validation', async (ctx) => {
   // the binding create/write guards (SPECS 5.4): expression/domain syntax,
   // source model, constant value, and a domain that is not a list.
@@ -358,6 +421,10 @@ case_('recipe_validate', async (ctx) => {
   const result = await ctx.rpc('jaot.recipe', 'action_validate', [[recipe.id]]);
   assert(result?.type === 'ir.actions.client', `Validate did not return a client action: ${JSON.stringify(result)}`);
   assert(/validated|no syntax errors/i.test(result.params.params.message), `unexpected validate result: ${result.params.params.message}`);
+  // the Show bindings button opens the binding list for this recipe
+  const show = await ctx.rpc('jaot.recipe', 'action_show_bindings', [[recipe.id]]);
+  assert(show?.type === 'ir.actions.act_window' && show.res_model === 'jaot.binding',
+    `Show bindings did not return a binding list action: ${JSON.stringify(show)}`);
 });
 
 case_('recipe_validate_invalid', async (ctx) => {
@@ -374,6 +441,124 @@ case_('recipe_validate_invalid', async (ctx) => {
       () => ctx.rpc('jaot.recipe', 'action_validate', [[recipe.id]]));
   } finally {
     execSql(`UPDATE jaot_binding SET expression = NULL WHERE id = ${binding.id}`);
+  }
+});
+
+case_('toy_lifecycle', async (ctx) => {
+  // The base module's own domain (PLAN P2.8 gate): a 0/1 knapsack over
+  // jaot.demo.item — recipe + bindings authored through the API, then the
+  // full UI lifecycle Solve -> Apply -> Revert.
+  const itemsSpec = [
+    ['E2E Toy A', 2, 6], ['E2E Toy B', 3, 10], ['E2E Toy C', 4, 9],
+    ['E2E Toy D', 5, 12], ['E2E Toy E', 1, 4],
+  ];
+  // capacity 10 -> the unique optimum selects A+B+C+E (weight 10, value 29).
+  const CAPACITY = 10.0;
+  let recipeId = (await ctx.rpc('jaot.recipe', 'search_read',
+    [[['code', '=', 'toy_knapsack'], ['company_id', '=', 1]], ['id']]))[0];
+  recipeId = recipeId ? recipeId.id : null;
+  if (!recipeId) {
+    // create returns the new id (a number), not a record.
+    recipeId = (await ctx.rpc('jaot.recipe', 'create', [[{
+      code: 'toy_knapsack', name: 'Toy Knapsack E2E', domain: 'stock', company_id: 1,
+    }]]))[0];
+  }
+  // A bare recipe left behind by a previously interrupted run has no roles:
+  // build the full spec onto it (its id is already referenced by scenarios,
+  // so it cannot be deleted).
+  const roleCount = await ctx.rpc('jaot.recipe.role', 'search_count',
+    [[['recipe_id', '=', recipeId]]]);
+  if (!roleCount) {
+    const roles = {};
+    for (const [name, kind, data_type] of [
+      ['item', 'variable', 'reference'],
+      ['weight', 'variable', 'quantity'],
+      ['value', 'variable', 'quantity'],
+      ['capacity', 'parameter', 'number'],
+    ]) {
+      roles[name] = (await ctx.rpc('jaot.recipe.role', 'create', [[{
+        recipe_id: recipeId, name, kind, data_type, required: true,
+      }]]))[0];
+    }
+    for (const [role, field_path] of [['item', 'name'], ['weight', 'weight'], ['value', 'value']]) {
+      await ctx.rpc('jaot.binding', 'create', [[{
+        recipe_id: recipeId, role_id: roles[role], res_model: 'jaot.demo.item',
+        field_path, company_id: 1,
+      }]]);
+    }
+    await ctx.rpc('jaot.binding', 'create', [[{
+      recipe_id: recipeId, role_id: roles.capacity,
+      constant_value: String(CAPACITY), company_id: 1,
+    }]]);
+  }
+  const items = {};
+  for (const [name, weight, value] of itemsSpec) {
+    let row = (await ctx.rpc('jaot.demo.item', 'search_read',
+      [[['name', '=', name], ['company_id', '=', 1]], ['id', 'weight', 'value', 'selected']]))[0];
+    if (!row) {
+      const id = (await ctx.rpc('jaot.demo.item', 'create', [[{
+        name, weight, value, company_id: 1,
+      }]]))[0];
+      row = (await ctx.rpc('jaot.demo.item', 'read', [[id], ['id', 'weight', 'value', 'selected']]))[0];
+    }
+    items[name] = row;
+  }
+  for (const name of Object.keys(items)) {
+    await ctx.rpc('jaot.demo.item', 'write', [[items[name].id], { selected: false }]);
+  }
+
+  const sid = (await ctx.rpc('jaot.scenario', 'create', [[{
+    name: `E2E TOY ${Date.now()}`, recipe_id: recipeId, company_id: 1,
+  }]]))[0];
+
+  // Solve (UI) -> solved; the optimum is unique and known a priori.
+  await openForm(ctx.page, sid);
+  await clickBtn(ctx.page, 'Solve');
+  const row = await pollTo(ctx.rpc, sid, 'state', ['solved', 'failed']);
+  assert(row.state === 'solved', `toy scenario failed: ${row.jaot_error}`);
+  assert(row.line_count === 5, `expected 5 lines, got ${row.line_count}`);
+  assert(row.objective_value > 28.999 && row.objective_value < 29.001,
+    `expected the known optimum 29, got ${row.objective_value}`);
+  const lines = await ctx.rpc('jaot.scenario.line', 'search_read',
+    [[['scenario_id', '=', sid]], ['res_id', 'decision', 'kpi_contribution', 'decision_text', 'record_label']]);
+  const expected = { 'E2E Toy A': true, 'E2E Toy B': true, 'E2E Toy C': true,
+                      'E2E Toy D': false, 'E2E Toy E': true };
+  let usedWeight = 0, totalValue = 0;
+  for (const l of lines) {
+    const spec = itemsSpec.find(([n]) => items[n].id === l.res_id);
+    const want = expected[spec[0]];
+    assert(l.decision.selected === want,
+      `item ${spec[0]}: selected=${l.decision.selected}, expected ${want}`);
+    assert(l.record_label === spec[0], `record_label ${l.record_label} != ${spec[0]}`);
+    assert(l.decision_text === (want ? 'Selected' : 'Not selected'),
+      `decision_text ${l.decision_text} for ${spec[0]}`);
+    if (want) { usedWeight += spec[1]; totalValue += spec[2]; }
+  }
+  assert(usedWeight <= CAPACITY, `plan over capacity: ${usedWeight} > ${CAPACITY}`);
+  assert(Math.abs(totalValue - row.objective_value) < 1e-6,
+    `objective ${row.objective_value} != sum of selected values ${totalValue}`);
+
+  // Apply (UI, confirmation-gated): the selected flag lands on the items.
+  await openForm(ctx.page, sid);
+  await clickBtn(ctx.page, 'Apply');
+  await confirmOk(ctx.page);
+  const applied = await readScenario(ctx.rpc, sid, ['state', 'applied', 'applied_by']);
+  assert(applied.state === 'applied' && applied.applied === true, `not applied: ${JSON.stringify(applied)}`);
+  assert(applied.applied_by && applied.applied_by[0] > 0, `applied_by not recorded: ${JSON.stringify(applied.applied_by)}`);
+  for (const [name, weight, value] of itemsSpec) {
+    const sel = (await ctx.rpc('jaot.demo.item', 'read', [[items[name].id], ['selected']]))[0].selected;
+    assert(sel === expected[name], `item ${name} selected=${sel}, expected ${expected[name]} after Apply`);
+  }
+
+  // Revert (UI, confirmation-gated): every item back to unselected.
+  await openForm(ctx.page, sid);
+  await clickBtn(ctx.page, 'Revert');
+  await confirmOk(ctx.page);
+  const rev = await readScenario(ctx.rpc, sid, ['state', 'applied']);
+  assert(rev.state === 'solved' && rev.applied === false, `not reverted: ${JSON.stringify(rev)}`);
+  for (const [name] of itemsSpec) {
+    const sel = (await ctx.rpc('jaot.demo.item', 'read', [[items[name].id], ['selected']]))[0].selected;
+    assert(sel === false, `item ${name} still selected after Revert`);
   }
 });
 
@@ -419,6 +604,16 @@ case_('mrp_lifecycle', async (ctx) => {
   assert(row.solver_status === 'optimal', `solver_status ${row.solver_status}`);
   assert(typeof row.objective_value === 'number' && row.objective_value > 0, `no objective value: ${row.objective_value}`);
 
+  // SPECS §4.5: the full request/response payloads and the binding snapshot
+  // are stored on the scenario (auditable, reproducible).
+  const payloads = await readScenario(ctx.rpc, sid, ['request_payload', 'response_payload', 'binding_snapshot']);
+  assert(payloads.request_payload && Array.isArray(payloads.request_payload.variables)
+    && payloads.request_payload.variables.length > 0,
+    `request_payload not stored: ${JSON.stringify(payloads.request_payload)}`);
+  assert(payloads.response_payload, 'response_payload not stored');
+  assert(Array.isArray(payloads.binding_snapshot) && payloads.binding_snapshot.length > 0,
+    'binding_snapshot not stored');
+
   // Compare with baseline (UI): creates + submits a pinned baseline scenario.
   await openForm(ctx.page, sid);
   await clickBtn(ctx.page, 'Compare with baseline');
@@ -447,6 +642,15 @@ case_('mrp_lifecycle', async (ctx) => {
   assert(wf.whatif_state === 'done', `what-if did not complete: ${wf.whatif_state}`);
   const wfLines = await ctx.rpc('jaot.scenario.whatif', 'search', [[['scenario_id', '=', sid]]]);
   assert(wfLines.length > 0, 'no what-if rows stored');
+  // the What-if tab renders the stored rows in the UI
+  await openForm(ctx.page, sid);
+  const wfTab = ctx.page.locator('.o_notebook_headers .nav-link', { hasText: 'What-if analysis' });
+  assert(await wfTab.count() > 0, 'What-if tab not visible after a completed analysis');
+  await wfTab.first().click();
+  await ctx.page.waitForTimeout(1200);
+  const wfText = await ctx.page.locator('.o_form_view').innerText();
+  assert(/Constraint RHS|Decision flip/.test(wfText),
+    'What-if tab did not render the stored rows');
 
   // Apply (UI, confirmation-gated) -> applied; MO dates written + audit log.
   await openForm(ctx.page, sid);
@@ -484,6 +688,27 @@ case_('mrp_lifecycle', async (ctx) => {
   ctx.mrpSolvedId = sid;
 });
 
+case_('kpi_headline_objective_only', async (ctx) => {
+  // P9.7: without a baseline the headline is the objective-only line, and
+  // the form banner renders it.
+  const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'mrp']], ['id']]))[0];
+  const sid = (await ctx.rpc('jaot.scenario', 'create', [[{
+    name: `E2E HEAD ${Date.now()}`, recipe_id: recipe.id, company_id: 1,
+  }]]))[0];
+  await ctx.rpc('jaot.scenario', 'action_submit', [[sid]]);
+  const row = await pollTo(ctx.rpc, sid, 'state', ['solved', 'failed']);
+  assert(row.state === 'solved', `scenario failed: ${row.jaot_error}`);
+  const h = (await readScenario(ctx.rpc, sid, ['kpi_headline'])).kpi_headline;
+  // SPECS 13.7: a unit-labelled objective-only line (no baseline variant),
+  // e.g. "Objective 1000.00 USD (minimized)".
+  assert(/Objective \d+\.\d{2}( [A-Za-z.]+)? \(minimized\)/.test(h || ''),
+    `objective-only headline wrong: ${h}`);
+  await openForm(ctx.page, sid);
+  const banner = ctx.page.locator('.o_form_view .alert-info', { hasText: 'Result:' });
+  assert(await banner.count() > 0, 'Result banner missing on a solved scenario');
+  assert((await banner.first().innerText()).includes(h), 'banner does not show the headline');
+});
+
 case_('mrp_reapply_after_revert', async (ctx) => {
   // the full second round: Apply again on the reverted scenario, then
   // Revert again; and the jaot_scenario_id link on the MOs must follow the
@@ -510,6 +735,21 @@ case_('mrp_reapply_after_revert', async (ctx) => {
     [[['scenario_id', '=', sid], ['state', '=', 'applied']], ['field_path']], {}, { limit: 40 });
   assert(log.some((l) => l.field_path === 'jaot_scenario_id'),
     'jaot_scenario_id link not audit-logged by Apply');
+  // the MO form renders the JAOT scheduling group with the scenario link.
+  // The scenario link is a Many2one -> an autocomplete <input>: its display
+  // name is the element's .value, not a text node, so wait on the input value.
+  const scenName = (await ctx.rpc('jaot.scenario', 'read', [[sid], ['name']]))[0].name;
+  await ctx.page.goto(`${BASE}/web#id=${mosLink[0].id}&model=mrp.production&view_type=form`,
+    { waitUntil: 'domcontentloaded' });
+  // Scope to the VISIBLE form: a raw querySelector('.o_form_view') can hit a
+  // stale hidden form node left in the DOM, whose text never updates.
+  const moForm = ctx.page.locator('.o_form_view:visible', { hasText: /JAOT scheduling/i });
+  await moForm.first().waitFor({ state: 'visible', timeout: 15000 });
+  const moText = await moForm.first().innerText();
+  assert(/JAOT scheduling/i.test(moText), 'MO form missing the JAOT scheduling group');
+  // The scenario name is not a text node (it is the input's .value), so the
+  // group's innerText never contains it; assert on the widget's value instead.
+  await waitForWidgetValue(ctx.page, 'jaot_scenario_id', scenName);
 
   await openForm(ctx.page, sid);
   await clickBtn(ctx.page, 'Revert');
@@ -522,6 +762,52 @@ case_('mrp_reapply_after_revert', async (ctx) => {
     const link = m.jaot_scenario_id ? m.jaot_scenario_id[0] : null;
     assert(link === prevLink[m.id], `MO ${m.id} jaot_scenario_id not restored: ${link} != ${prevLink[m.id]}`);
     assert(m.date_start === before[m.id], `MO ${m.id} date not restored on second revert: ${m.date_start} != ${before[m.id]}`);
+  }
+});
+
+case_('apply_all_missing', async (ctx) => {
+  // Apply when EVERY target record is gone: the apply must refuse (there
+  // would be nothing to revert), the scenario stays solved, and the MOs
+  // are restored afterwards.
+  const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'mrp']], ['id']]))[0];
+  const mos0 = await ctx.rpc('mrp.production', 'search_read',
+    [[['name', 'like', 'E2E MO']], ['id']], {}, { limit: 20 });
+  assert(mos0.length === 4, `expected 4 E2E MOs, got ${mos0.length}`);
+  const product = (await ctx.rpc('product.product', 'search_read', [[['name', '=', 'E2E Widget']], ['id']]))[0];
+  const wh = (await ctx.rpc('stock.warehouse', 'search_read', [[['code', '=', 'WH']], ['id']]))[0];
+  const sid = (await ctx.rpc('jaot.scenario', 'create', [[{
+    name: `E2E ALLMISS ${Date.now()}`, recipe_id: recipe.id, company_id: 1,
+  }]]))[0];
+  await ctx.rpc('jaot.scenario', 'action_submit', [[sid]]);
+  const row = await pollTo(ctx.rpc, sid, 'state', ['solved', 'failed']);
+  assert(row.state === 'solved', `scenario failed: ${row.jaot_error}`);
+  try {
+    for (const m of mos0) {
+      await ctx.rpc('mrp.production', 'unlink', [[m.id]]);
+    }
+    await expectError(/None of the plan's target records exist/i,
+      () => ctx.rpc('jaot.scenario', 'action_apply', [[sid]]));
+    const after = await readScenario(ctx.rpc, sid, ['state', 'applied']);
+    assert(after.state === 'solved' && after.applied === false,
+      `scenario marked applied with no surviving records: ${JSON.stringify(after)}`);
+  } finally {
+    // recreate the four seed MOs exactly as the seed defines them
+    for (const [i, qty, due] of [
+      [1, 100.0, '2026-10-05'], [2, 100.0, '2026-10-05'],
+      [3, 150.0, '2026-10-06'], [4, 150.0, '2026-10-06'],
+    ]) {
+      const newMo = (await ctx.rpc('mrp.production', 'create', [[{
+        name: `E2E MO ${i}`, product_id: product.id, product_qty: qty, warehouse_id: wh.id,
+      }]]))[0];
+      await ctx.rpc('mrp.production', 'action_confirm', [[newMo]]);
+      const mid = (await ctx.rpc('mrp.production', 'read', [[newMo], ['move_finished_ids']]))[0].move_finished_ids[0];
+      await ctx.rpc('stock.move', 'write', [[mid], { date_deadline: due }]);
+      await ctx.rpc('mrp.production', 'write', [[newMo], { date_start: '2026-10-05 06:00:00' }]);
+    }
+    const restored = await ctx.rpc('mrp.production', 'search_read',
+      [[['name', 'like', 'E2E MO']], ['id', 'state']], {}, { limit: 20 });
+    assert(restored.length === 4 && restored.every((m) => m.state === 'confirmed'),
+      `E2E MOs not restored: ${JSON.stringify(restored)}`);
   }
 });
 
@@ -554,14 +840,44 @@ case_('lifecycle_guards', async (ctx) => {
     () => ctx.rpc('jaot.scenario', 'action_run_whatif', [[draft]]));
 });
 
+case_('failed_state_guards', async (ctx) => {
+  // a failed scenario is a dead end (SPECS §4.4: the retry is a NEW
+  // scenario): no resubmit, no apply, no revert, no baseline — and the
+  // reconcile must not resurrect it.
+  const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'mrp']], ['id']]))[0];
+  const sid = (await ctx.rpc('jaot.scenario', 'create', [[{
+    name: `E2E FAILGUARD ${Date.now()}`, recipe_id: recipe.id, company_id: 1,
+  }]]))[0];
+  await ctx.rpc('jaot.scenario', 'write', [[sid], { state: 'failed', jaot_error: 'planted' }]);
+  await expectError(/Only draft scenarios can be submitted/i,
+    () => ctx.rpc('jaot.scenario', 'action_submit', [[sid]]));
+  await expectError(/Only solved scenarios can be applied/i,
+    () => ctx.rpc('jaot.scenario', 'action_apply', [[sid]]));
+  await expectError(/Only applied scenarios can be reverted/i,
+    () => ctx.rpc('jaot.scenario', 'action_revert', [[sid]]));
+  await expectError(/Only a solved scenario can be baselined/i,
+    () => ctx.rpc('jaot.scenario', 'action_compare_baseline', [[sid]]));
+  await ctx.rpc('jaot.scenario', 'reconcile_jaot_scenarios', []);
+  const row = (await ctx.rpc('jaot.scenario', 'read', [[sid], ['state']]))[0];
+  assert(row.state === 'failed', `reconcile changed the failed scenario: ${row.state}`);
+});
+
 case_('staleness_negative', async (ctx) => {
   // untouched source data: Check staleness must report current, not stale.
-  const sid = ctx.mrpSolvedId;
-  assert(sid, 'no solved MRP scenario');
+  // A FRESH scenario: the shared scenario's snapshot predates the MO
+  // recreation in apply_all_missing, so it is legitimately stale — the
+  // negative case needs a snapshot taken against the current records.
+  const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'mrp']], ['id']]))[0];
+  const sid = (await ctx.rpc('jaot.scenario', 'create', [[{
+    name: `E2E FRESH ${Date.now()}`, recipe_id: recipe.id, company_id: 1,
+  }]]))[0];
+  await ctx.rpc('jaot.scenario', 'action_submit', [[sid]]);
+  const row = await pollTo(ctx.rpc, sid, 'state', ['solved', 'failed']);
+  assert(row.state === 'solved', `fresh scenario failed: ${row.jaot_error}`);
   await openForm(ctx.page, sid);
   await clickBtn(ctx.page, 'Check staleness');
-  const row = await readScenario(ctx.rpc, sid, ['data_stale']);
-  assert(row.data_stale === false, `data_stale true on untouched data: ${JSON.stringify(row)}`);
+  const st = await readScenario(ctx.rpc, sid, ['data_stale']);
+  assert(st.data_stale === false, `data_stale true on untouched data: ${JSON.stringify(st)}`);
 });
 
 case_('mrp_infeasible', async (ctx) => {
@@ -578,6 +894,19 @@ case_('mrp_infeasible', async (ctx) => {
     assert(row.state === 'failed', `expected infeasible/failed, got ${row.state}`);
     const infeas = await readScenario(ctx.rpc, sid, ['infeasibility', 'jaot_error']);
     assert(infeas.infeasibility || infeas.jaot_error, 'no infeasibility/error recorded for a failed scenario');
+    // the Error / infeasibility tab renders the failure on the form. The tab
+    // content hydrates client-side after the click, so wait for the jaot_error
+    // text ("Infeasible.") instead of a fixed delay.
+    await openForm(ctx.page, sid);
+    // Scope the tab to the VISIBLE form: a raw querySelector('.o_form_view')
+    // can hit a stale hidden form node left in the DOM, whose text never updates.
+    const errTab = ctx.page.locator('.o_form_view:visible .o_notebook_headers .nav-link',
+      { hasText: 'Error / infeasibility' });
+    assert(await errTab.count() > 0, 'Error tab not visible on the failed scenario');
+    await errTab.first().click();
+    // jaot_error is a Text field -> <textarea>: its value lives in the element's
+    // .value, not in text nodes, so a text-based locator can never see it.
+    await waitForWidgetValue(ctx.page, 'jaot_error', 'Infeasible');
   } finally {
     await ctx.rpc('jaot.binding', 'write', [[binding.id], { constant_value: origCap }]);
   }
@@ -707,6 +1036,21 @@ case_('vrp_lifecycle', async (ctx) => {
     const link = p.jaot_scenario_id ? p.jaot_scenario_id[0] : null;
     assert(link === sid, `picking ${p.id} jaot_scenario_id is ${link}, expected scenario ${sid} after Apply`);
   }
+  // the picking form renders the JAOT routing group with the scenario link.
+  // The scenario link is a Many2one -> an autocomplete <input>: its display
+  // name is the element's .value, not a text node, so wait on the input value.
+  const scenName = (await ctx.rpc('jaot.scenario', 'read', [[sid], ['name']]))[0].name;
+  await ctx.page.goto(`${BASE}/web#id=${picksAfter[0].id}&model=stock.picking&view_type=form`,
+    { waitUntil: 'domcontentloaded' });
+  // Scope to the VISIBLE form: a raw querySelector('.o_form_view') can hit a
+  // stale hidden form node left in the DOM, whose text never updates.
+  const pickForm = ctx.page.locator('.o_form_view:visible', { hasText: /JAOT routing/i });
+  await pickForm.first().waitFor({ state: 'visible', timeout: 15000 });
+  const pickText = await pickForm.first().innerText();
+  assert(/JAOT routing/i.test(pickText), 'picking form missing the JAOT routing group');
+  // The scenario name is not a text node (it is the input's .value), so the
+  // group's innerText never contains it; assert on the widget's value instead.
+  await waitForWidgetValue(ctx.page, 'jaot_scenario_id', scenName);
 
   // Revert (confirmation-gated): pickings restored.
   await openForm(ctx.page, sid);
@@ -860,6 +1204,37 @@ case_('security_viewer', async (ctx) => {
   }
 });
 
+case_('viewer_presentation_safe', async (ctx) => {
+  // P9.7 access safety: a viewer reads the plain-language presentation of a
+  // solved MRP scenario — every field is a human label, and no machine
+  // identifier (variable name, source field, model, database id) leaks.
+  const sid = ctx.mrpSolvedId;
+  assert(sid, 'no solved MRP scenario');
+  const vctx = await ctx.browser.newContext();
+  const vpage = await vctx.newPage();
+  const vrpc = makeRpc(vpage);
+  try {
+    await login(vpage, VIEW);
+    const lines = await vrpc('jaot.scenario.line', 'search_read',
+      [[['scenario_id', '=', sid]], ['record_label', 'decision_text', 'change_preview']]);
+    assert(lines.length > 0, 'viewer could not read the scenario lines');
+    for (const l of lines) {
+      for (const [field, value] of [
+        ['record_label', l.record_label],
+        ['decision_text', l.decision_text],
+        ['change_preview', l.change_preview],
+      ]) {
+        assert(typeof value === 'string' && value.length > 0,
+          `viewer ${field} empty: ${JSON.stringify(l)}`);
+        assert(!/cap_\d|deliver_\d|x_\d+_\d|q_\d+_\d|fix_\d|bal_\d|link_\d|date_start|mrp\.production/i.test(value),
+          `machine identifier in ${field}: ${value}`);
+      }
+    }
+  } finally {
+    await vctx.close();
+  }
+});
+
 case_('security_viewer_write_denied', async (ctx) => {
   // the viewer is read-only end-to-end: no create, no apply, no key fields —
   // but the un-gated Test connection still works (it is read-only).
@@ -936,6 +1311,10 @@ case_('scenario_list_view', async (ctx) => {
   const text = await ctx.page.locator('.o_list_view').innerText();
   assert(/E2E MRP/.test(text), 'scenario list does not show the MRP lifecycle scenario');
   assert(/Solved|Applied|Failed|Cancelled/.test(text), 'scenario list shows no states');
+  // P9.7: the plain-language headline is a first-class column
+  const headers = await ctx.page.locator('.o_list_view thead th, .o_list_table thead th').allInnerTexts();
+  assert(headers.some((h) => /KPI headline/i.test(h)),
+    `no KPI headline column in the list: ${JSON.stringify(headers)}`);
 });
 
 case_('chatter_audit', async (ctx) => {

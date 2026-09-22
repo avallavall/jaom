@@ -7,7 +7,7 @@ modules. One case per user flow; the runner exits `0` only when every case
 passes and writes per-case results (plus a screenshot per failure) to
 `dev/e2e/results/e2e_results.json` (git-ignored).
 
-## What it exercises (33 cases)
+## What it exercises (39 cases)
 
 **Connection management**
 - Manager login and navigation.
@@ -23,35 +23,59 @@ passes and writes per-case results (plus a screenshot per failure) to
 - Save a new key through the manager form field (UI write path).
 - Uniqueness: one connection per company, one recipe code per company.
 
+**Company isolation**
+- A scenario for a company with no binding for the recipe is refused at
+  submit with an explicit error (no silent union of companies' data).
+- A submit for a company with no connection at all names the missing
+  connection; both scenarios stay draft.
+
 **Recipe and binding authoring**
 - *Validate* on a valid recipe (UI + RPC).
+- *Show bindings* opens the binding list for the recipe.
 - *Validate* catching a syntactically invalid expression planted by direct
   SQL (the audit re-check is not a rubber stamp).
 - Binding create/write guards: expression syntax, domain syntax, non-list
   domain literal, missing source model for a variable role, missing constant
   value for a parameter role.
 
+**Base-module domain (toy knapsack)**
+- Full lifecycle on `jaot.demo.item`: Solve (the unique optimum is verified
+  against the a-priori optimum), Apply writes the `selected` flags, Revert
+  restores them; plain-language line text (Selected / Not selected).
+
 **Scenario lifecycles**
 - New scenario from the UI (list > New > name + recipe > Save).
-- Full MRP lifecycle: Solve → solved (4 lines, optimal) → Compare with
-  baseline (delta on `kpi_summary`) → What-if (rows stored) → Apply
-  (confirmation-gated, MO dates + audit log + `applied_by`) → Revert
-  (confirmation-gated, MO dates restored).
+- Full MRP lifecycle: Solve → solved (4 lines, optimal; the request payload,
+  the solver's response, and the binding snapshot are all captured) → Compare
+  with baseline (delta on `kpi_summary`) → What-if (rows stored and the
+  *What-if analysis* tab renders them) → Apply (confirmation-gated, MO dates +
+  audit log + `applied_by`, and the *JAOT scheduling* form group on each MO) →
+  Revert (confirmation-gated, MO dates restored).
 - Second round: re-Apply on the reverted scenario, then re-Revert; the
   `jaot_scenario_id` link on the MOs follows the scenario and is
   audit-logged.
 - State-machine guards: every action refuses the wrong state with a clear
   message.
+- Failed is a dead end: a scenario planted in `failed` can neither be
+  submitted, applied, reverted, nor baselined — and the reconcile does not
+  pull it back out.
 - Staleness: positive (mutated source MO → `data_stale` + warning banner)
   and negative (untouched data → current).
-- Infeasible MRP solve (capacity cut → failed + infeasibility record).
+- Infeasible MRP solve (capacity cut → failed + infeasibility record, and
+  the *Error / infeasibility* tab renders it).
+- KPI headline with no baseline: a freshly solved scenario states the
+  objective value plainly, unit-labelled (e.g. "Objective 1000.00 USD
+  (minimized)") and the form's Result banner shows the same sentence.
+- Apply when every target record is gone: the error names the condition,
+  the scenario stays `solved` (not `applied`), and the records can be rebuilt.
 - Cancel a queued scenario from the UI.
 - Orphan backstop: a scenario stuck `queued` without a JAOT task id is
   failed by the reconcile with a timeout error.
 - Apply with a deleted source record: the apply skips the missing record,
   writes the rest, and reverts cleanly (the record is restored afterwards).
 - VRP lifecycle: Solve → solved (4 pickings) → Apply (confirmation-gated,
-  vehicle + route sequence + `jaot_scenario_id` written) → Revert (restored).
+  vehicle + route sequence + `jaot_scenario_id` written, and the *JAOT
+  routing* form group on the picking) → Revert (restored).
 - VRP baseline + what-if: an applied plan becomes the incumbent, a second
   scenario is baselined against it (delta written), and what-if runs on the
   applied scenario; both scenarios are reverted afterwards.
@@ -67,11 +91,15 @@ passes and writes per-case results (plus a screenshot per failure) to
   un-gated *Test connection*.
 - Manager: the `group_system`-only expression column and the *JAOT
   identifiers* block are hidden.
+- Viewer on a solved MRP scenario: every plain-language field (record label,
+  decision text, before→after preview) renders without leaking a machine
+  identifier (variable name, field path, or a raw model reference).
 - System admin (`e2eadmin`): the positive control — the expression column
   and the *JAOT identifiers* block are visible.
 
 **Audit and rendering**
-- Scenario list renders the accumulated rows with their states.
+- Scenario list renders the accumulated rows with their states and a
+  KPI headline column.
 - The scenario chatter carries the lifecycle events (submitted, solved,
   applied, reverted); the config chatter carries the key events.
 - Reverted audit-log rows are listed in the Apply Log.
