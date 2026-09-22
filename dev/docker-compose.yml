@@ -35,6 +35,19 @@ services:
       timeout: 3s
       retries: 20
 
+  odoo-init:
+    # One-shot: make the filestore volume writable by the `odoo` user
+    # (uid 100, gid 101). A freshly-created named volume is root-owned
+    # because /var/lib/odoo/filestore does not exist in the image, so
+    # Odoo (running as `odoo`) cannot write asset/attachment blobs and
+    # every asset request 500s. Idempotent and cheap; runs before odoo.
+    image: odoo:19.0
+    user: root
+    command: ["chown", "-R", "100:101", "/var/lib/odoo/filestore"]
+    volumes:
+      - jaom_filestore:/var/lib/odoo/filestore
+    restart: "no"
+
   odoo:
     # Official image lives in Docker Hub's library namespace: `odoo:19.0`,
     # NOT `odoo/odoo` (that org repo 404s as of 2026-09-11).
@@ -43,6 +56,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      odoo-init:
+        condition: service_completed_successfully
     ports:
       - "127.0.0.1:8069:8069"
     environment:
@@ -51,6 +66,13 @@ services:
       PGPASSWORD: odoo
     volumes:
       - ..:/mnt/extra-addons:ro
+      # Persist the filestore: asset blobs (web.assets_*) and attachment
+      # contents live here, referenced by ir_attachment in the (persisted)
+      # database. Without this volume, `docker compose down` wipes the
+      # blobs while the DB keeps pointing at them, so every asset 500s and
+      # the web client renders a blank page after the next `up`.
+      - jaom_filestore:/var/lib/odoo/filestore
 
 volumes:
   jaom_pg_data:
+  jaom_filestore:

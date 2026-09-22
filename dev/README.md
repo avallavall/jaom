@@ -73,6 +73,11 @@ one module** (a subdirectory with `__init__.py` + `__manifest__.py`) —
 - Official Odoo image: library pull name `odoo:19.0` — **not** `odoo/odoo`
   (that repo 404s on Docker Hub as of 2026-09-11). See
   `docs/research/A-odoo-terrain.md` §3/§9.
+- The Odoo **filestore** (asset bundles + attachment contents) is persisted in a
+  named volume (`jaom_filestore`), and a one-shot `odoo-init` service chowns it to
+  the `odoo` user on every start. Before this, `down`/`up` wiped the asset blobs
+  while the (persisted) database kept pointing at them, so every asset request
+  500'd and the web client rendered a blank page.
 - P1.3 (JAOT contract): the sibling repo `../jaot` runs its own dev stack
   (pg 5432, api 8001, frontend 3000) — no port conflicts. As of 2026-09-11
   it is up and healthy: `GET http://127.0.0.1:8001/api/v2/health` →

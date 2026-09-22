@@ -4,6 +4,9 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- Fix: `docker compose down` / `up` no longer leaves the web client on a
+  blank page — the Odoo filestore (asset blobs) is now persisted in a
+  volume, so the database and its assets stay in sync across restarts.
 - Fix: the scenario actions (Solve, Apply, Revert, baseline, what-if,
   staleness check) are now access-checked at the API level, so a
   read-only user cannot trigger them — before, the denial depended on a
