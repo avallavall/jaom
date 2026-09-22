@@ -4,6 +4,10 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- New: Spanish (es_ES) translations for all three modules — users who
+  select Spanish get the menus, form labels and generated messages in
+  Spanish. The i18n CI check now also verifies that the committed
+  catalogs cover every template string with no untranslated entries.
 - New: named scenario cases — re-solve a solved scenario with a named
   parameter perturbation (set or scale), from the scenario's Cases tab or
   the new Scenario Cases list, and compare the new plan against the

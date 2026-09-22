@@ -7,7 +7,7 @@ modules. One case per user flow; the runner exits `0` only when every case
 passes and writes per-case results (plus a screenshot per failure) to
 `dev/e2e/results/e2e_results.json` (git-ignored).
 
-## What it exercises (40 cases)
+## What it exercises (41 cases)
 
 **Connection management**
 - Manager login and navigation.
@@ -113,6 +113,15 @@ passes and writes per-case results (plus a screenshot per failure) to
   plain-language KPI headline, per-line plain-text decisions and a
   before→after preview; the form renders the Result banner plus the
   plain-language line columns, with no machine identifiers leaking.
+
+**Internationalization**
+- The committed Spanish catalogs load into the database (Odoo 19 stores
+  model terms in JSONB columns on the model tables — the module-data
+  recipes and every recipe role end up translated) and the web client
+  renders in Spanish for an `es_ES` user: the top menu, the scenario list
+  headers, and the solved-scenario form (Result banner, field labels) are
+  all Spanish. Runs last: it switches the manager's language and restores
+  it.
 
 ## Prerequisites
 

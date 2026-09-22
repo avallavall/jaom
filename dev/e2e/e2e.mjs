@@ -913,18 +913,26 @@ case_('mrp_infeasible', async (ctx) => {
 });
 
 case_('mrp_cancel', async (ctx) => {
-  const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'mrp']], ['id']]))[0];
-  const sid = (await ctx.rpc('jaot.scenario', 'create', [[{ name: `E2E CANCEL ${Date.now()}`, recipe_id: recipe.id, company_id: 1 }]]))[0];
-  await openForm(ctx.page, sid);
-  await clickBtn(ctx.page, 'Solve');
-  // Deliberately NO reconcile here: it would advance the scenario past the
-  // state the Cancel button targets. action_submit leaves it queued; the
-  // one-minute cron (not run within this short window) is what would move it.
-  await sleep(2000);
-  await openForm(ctx.page, sid); // reload -> the queued state shows Cancel
-  await clickBtn(ctx.page, 'Cancel');
-  const after = await readScenario(ctx.rpc, sid, ['state']);
-  assert(after.state === 'cancelled', `not cancelled: ${after.state}`);
+  // The one-minute reconcile cron can legitimately fire between the two
+  // form opens, so pin it off for the duration of this case. (Odoo 19
+  // stores the cron label in the cron_name column.)
+  execSql("UPDATE ir_cron SET active = false WHERE cron_name LIKE '%reconcile scenarios%'");
+  try {
+    const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'mrp']], ['id']]))[0];
+    const sid = (await ctx.rpc('jaot.scenario', 'create', [[{ name: `E2E CANCEL ${Date.now()}`, recipe_id: recipe.id, company_id: 1 }]]))[0];
+    await openForm(ctx.page, sid);
+    await clickBtn(ctx.page, 'Solve');
+    // Deliberately NO reconcile here: it would advance the scenario past the
+    // state the Cancel button targets. action_submit leaves it queued and
+    // the reconcile cron is off, so nothing else can move it.
+    await sleep(2000);
+    await openForm(ctx.page, sid); // reload -> the queued state shows Cancel
+    await clickBtn(ctx.page, 'Cancel');
+    const after = await readScenario(ctx.rpc, sid, ['state']);
+    assert(after.state === 'cancelled', `not cancelled: ${after.state}`);
+  } finally {
+    execSql("UPDATE ir_cron SET active = true WHERE cron_name LIKE '%reconcile scenarios%'");
+  }
 });
 
 case_('orphan_queued_timeout', async (ctx) => {
@@ -1158,7 +1166,11 @@ case_('named_cases', async (ctx) => {
   // vehicle at 400 kg (two 200 kg pickings each) forces a 2+2 split (at
   // least one picking swaps vehicle in each direction). One case is run
   // through the UI Run button, the other via RPC; both mirror the child run
-  // state and store the comparison against the parent.
+  // state and store the comparison against the parent. The reconcile cron
+  // is pinned off: a live tick between Run and the state read would advance
+  // the run past queued, and pollTo reconciles by hand so nothing is lost.
+  execSql("UPDATE ir_cron SET active = false WHERE cron_name LIKE '%reconcile scenarios%'");
+  try {
   const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'vrp']], ['id']]))[0];
   const roles = await ctx.rpc('jaot.recipe.role', 'search_read',
     [[['recipe_id', '=', recipe.id], ['kind', '=', 'parameter']], ['id', 'name']]);
@@ -1254,6 +1266,9 @@ case_('named_cases', async (ctx) => {
   const text = await form.first().innerText();
   assert(/Objective delta vs parent/i.test(text), 'case form missing the objective delta');
   assert(/Lines changed/i.test(text), 'case form missing the line changes');
+  } finally {
+    execSql("UPDATE ir_cron SET active = true WHERE cron_name LIKE '%reconcile scenarios%'");
+  }
 });
 
 case_('staleness_detection', async (ctx) => {
@@ -1529,6 +1544,85 @@ case_('presentation_section', async (ctx) => {
   const formText = await ctx.page.locator('.o_form_view').innerText();
   assert(/Start \d{4}-\d{2}-\d{2}/.test(formText), 'Lines tab did not render the Start <date> decisions');
   assert(/->|Unchanged/.test(formText), 'Lines tab did not render the before->after preview');
+});
+
+case_('es_translation', async (ctx) => {
+  // P9.3: the committed Spanish catalogs load into the e2e database and
+  // the web client renders in Spanish for an es_ES user. Runs LAST: it
+  // switches the manager's language and restores it before finishing.
+  const load = execFileSync('docker', [
+    'compose', '-f', path.join(ROOT, 'dev', 'docker-compose.yml'),
+    'run', '--rm', 'odoo', 'odoo', 'shell', '-d', DB, '--no-http',
+  ], {
+    encoding: 'utf8',
+    input: fs.readFileSync(path.join(ROOT, 'dev', 'e2e', 'load_es.py'), 'utf8'),
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  assert(load.includes('jaot es catalogs loaded'),
+    `es catalog load failed: ${load.slice(-400)}`);
+  // Odoo 19 dropped the ir_translation table: model terms live in JSONB
+  // columns on the model tables. The module-data recipes and every
+  // field label must carry the es_ES key.
+  assert(execSql(
+    "SELECT name::jsonb->>'es_ES' FROM jaot_recipe WHERE code = 'vrp'")
+    === 'Ruteo de reparto (VRP)', 'vrp recipe not translated to Spanish');
+  // Every field label authored by the JAOT modules must carry the es_ES
+  // key (the inherited chatter labels come from the base/sms catalogs,
+  // not the jaot pots, so those two field names are excluded).
+  const untranslated = Number(execSql(
+    "SELECT count(*) FROM ir_model_fields f JOIN ir_model m " +
+    "ON m.id = f.model_id WHERE m.model LIKE 'jaot.%' " +
+    "AND f.name NOT IN ('website_message_ids','message_has_sms_error') " +
+    "AND NOT (f.field_description::jsonb ? 'es_ES')"));
+  assert(untranslated === 0,
+    `${untranslated} jaot field labels missing es_ES`);
+
+  // res_users.uid is an ORM-computed column; the table column is id.
+  const uid = Number(execSql(
+    "SELECT id FROM res_users WHERE login = 'jaotmgr'"));
+  // Fresh contexts: no shared session cookies between the admin and the
+  // es_ES manager logins.
+  const adminCtx = await ctx.browser.newContext();
+  const esCtx = await ctx.browser.newContext();
+  const adminPage = await adminCtx.newPage();
+  const esPage = await esCtx.newPage();
+  try {
+    await login(adminPage, ADMIN);
+    const arpc = makeRpc(adminPage);
+    await arpc('res.users', 'write', [[uid], { lang: 'es_ES' }]);
+    await login(esPage, MGR);
+    // Land in the JAOT app first: right after login the session opens the
+    // user's default app, whose menus are not the JAOT ones.
+    await gotoAction(esPage, A.scenarios);
+    // Odoo 19 renders the app menus in .o_menu_sections (the
+    // .o_menu_navigation wrapper no longer exists).
+    const nav = await esPage.locator('.o_menu_sections').innerText();
+    assert(/Escenarios/.test(nav), `top menu not in Spanish: ${nav}`);
+    assert(/Configuraci/.test(nav), `top menu not in Spanish: ${nav}`);
+    // the scenarios list renders with Spanish headers
+    const listText = await esPage.locator('.o_list_view, .o_form_view')
+      .first().innerText();
+    assert(/Nombre/.test(listText),
+      `scenarios list not in Spanish: ${listText.slice(0, 300)}`);
+    // a solved scenario form shows the Spanish Result banner + labels
+    const sid = ctx.mrpSolvedId;
+    assert(sid, 'no solved MRP scenario');
+    await openForm(esPage, sid);
+    const banner = esPage.locator('.o_form_view .alert-info',
+      { hasText: 'Resultado:' });
+    assert(await banner.count() > 0, 'Spanish Result banner not visible');
+    const formText = await esPage.locator('.o_form_view').innerText();
+    assert(/Receta/.test(formText), 'scenario form labels not in Spanish');
+  } finally {
+    // restore the manager's language and close the extra pages
+    try {
+      await login(adminPage, ADMIN);
+      const arpc2 = makeRpc(adminPage);
+      await arpc2('res.users', 'write', [[uid], { lang: 'en_US' }]);
+    } catch (e) { console.warn('lang restore failed:', e.message); }
+    await esCtx.close().catch(() => {});
+    await adminCtx.close().catch(() => {});
+  }
 });
 
 // ----------------------------------------------------------------------

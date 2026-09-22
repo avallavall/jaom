@@ -1,0 +1,1369 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* jaot_base
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0-20260908\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-22 18:28+0000\n"
+"PO-Revision-Date: 2026-09-22 19:05+0000\n"
+"Last-Translator: JAOM\n"
+"Language: es\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: jaot_base
+msgid " WARNING: configured default solver '%(s)s' is not in the live list."
+msgstr " AVISO: el solver por defecto configurado '%(s)s' no está en la lista en vivo."
+
+#. module: jaot_base
+msgid "%(b)s -> %(a)s"
+msgstr "%(b)s -> %(a)s"
+
+#. module: jaot_base
+msgid "%(parent)s · case %(name)s"
+msgstr "%(parent)s · caso %(name)s"
+
+#. module: jaot_base
+msgid "%(status)s %(version)s — %(passed)s/%(total)s health checks. Solvers available: %(solvers)s."
+msgstr "%(status)s %(version)s — %(passed)s/%(total)s comprobaciones de salud. Solvers disponibles: %(solvers)s."
+
+#. module: jaot_base
+msgid "%(verb)s %(d)s (%(p).1f%%) versus your current plan (%(b)s -> %(o)s)"
+msgstr "%(verb)s %(d)s (%(p).1f%%) frente a su plan actual (%(b)s -> %(o)s)"
+
+#. module: jaot_base
+msgid "10 s"
+msgstr "10 s"
+
+#. module: jaot_base
+msgid "30 s"
+msgstr "30 s"
+
+#. module: jaot_base
+msgid "5 s"
+msgstr "5 s"
+
+#. module: jaot_base
+msgid "<span class=\"o_stat_value\">Bindings</span>"
+msgstr "<span class=\"o_stat_value\">Vinculaciones</span>"
+
+#. module: jaot_base
+msgid "<strong>Result:</strong>"
+msgstr "<strong>Resultado:</strong>"
+
+#. module: jaot_base
+msgid "A case can only be run on a solved scenario (currently '%(state)s')."
+msgstr "Un caso solo se puede ejecutar sobre un escenario resuelto (actualmente '%(state)s')."
+
+#. module: jaot_base
+msgid "A case needs a non-empty list of parameter perturbations (each {role_id, mode, value})."
+msgstr "Un caso necesita una lista no vacía de perturbaciones de parámetros (cada {role_id, mode, value})."
+
+#. module: jaot_base
+msgid "A recipe code must be unique per company."
+msgstr "Un código de receta debe ser único por empresa."
+
+#. module: jaot_base
+msgid "API key (masked)"
+msgstr "Clave API (enmascarada)"
+
+#. module: jaot_base
+msgid "API key removed."
+msgstr "Clave API eliminada."
+
+#. module: jaot_base
+msgid "API key set"
+msgstr "Clave API configurada"
+
+#. module: jaot_base
+msgid "API key stored."
+msgstr "Clave API guardada."
+
+#. module: jaot_base
+msgid "Accounting"
+msgstr "Contabilidad"
+
+#. module: jaot_base
+msgid "Action Needed"
+msgstr "Acción necesaria"
+
+#. module: jaot_base
+msgid "Active"
+msgstr "Activo"
+
+#. module: jaot_base
+msgid "After value"
+msgstr "Valor posterior"
+
+#. module: jaot_base
+msgid "Applied"
+msgstr "Aplicado"
+
+#. module: jaot_base
+msgid "Applied %(n)s line(s)."
+msgstr "Se han aplicado %(n)s línea(s)."
+
+#. module: jaot_base
+msgid "Applied At"
+msgstr "Aplicado en"
+
+#. module: jaot_base
+msgid "Applied By"
+msgstr "Aplicado por"
+
+#. module: jaot_base
+msgid "Apply"
+msgstr "Aplicar"
+
+#. module: jaot_base
+msgid "Apply Log"
+msgstr "Registro de aplicación"
+
+#. module: jaot_base
+msgid "Apply this solution? Decision values will be written to the Odoo records."
+msgstr "¿Aplicar esta solución? Los valores de decisión se escribirán en los registros de Odoo."
+
+#. module: jaot_base
+msgid "Archived"
+msgstr "Archivado"
+
+#. module: jaot_base
+msgid "Attachment Count"
+msgstr "Número de adjuntos"
+
+#. module: jaot_base
+msgid "Base URL of the self-hosted JAOT instance, e.g. http://jaot.example.com — the API lives under /api/v2."
+msgstr "URL base de la instancia de JAOT autoalojada, p. ej. http://jaot.example.com — la API vive bajo /api/v2."
+
+#. module: jaot_base
+msgid "Baseline Scenario"
+msgstr "Escenario de referencia"
+
+#. module: jaot_base
+msgid "Baseline of"
+msgstr "Referencia de"
+
+#. module: jaot_base
+msgid "Baseline scenario"
+msgstr "Escenario de referencia"
+
+#. module: jaot_base
+msgid "Before value"
+msgstr "Valor anterior"
+
+#. module: jaot_base
+msgid "Binding"
+msgstr "Vinculación"
+
+#. module: jaot_base
+msgid "Binding for role '%(r)s' points at unknown model '%(m)s'."
+msgstr "La vinculación del rol '%(r)s' apunta a un modelo desconocido '%(m)s'."
+
+#. module: jaot_base
+msgid "Binding snapshot"
+msgstr "Instantánea de vinculaciones"
+
+#. module: jaot_base
+msgid "Bindings"
+msgstr "Vinculaciones"
+
+#. module: jaot_base
+msgid "Boolean"
+msgstr "Booleano"
+
+#. module: jaot_base
+msgid "Can run solves and view scenarios; applying requires the manager group (SPECS §5.9)."
+msgstr "Puede lanzar resoluciones y ver escenarios; aplicar requiere el grupo de gestor (SPECS §5.9)."
+
+#. module: jaot_base
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: jaot_base
+msgid "Cancelled"
+msgstr "Cancelado"
+
+#. module: jaot_base
+msgid "Cancelled on JAOT."
+msgstr "Cancelado en JAOT."
+
+#. module: jaot_base
+msgid "Cannot scale role '%(name)s': it has no current value."
+msgstr "No se puede escalar el rol '%(name)s': no tiene un valor actual."
+
+#. module: jaot_base
+msgid "Cannot write '%(p)s': an intermediate record is missing."
+msgstr "No se puede escribir '%(p)s': falta un registro intermedio."
+
+#. module: jaot_base
+msgid "Case name"
+msgstr "Nombre del caso"
+
+#. module: jaot_base
+msgid "Case run"
+msgstr "Ejecución del caso"
+
+#. module: jaot_base
+msgid "Cases"
+msgstr "Casos"
+
+#. module: jaot_base
+msgid "Change"
+msgstr "Cambio"
+
+#. module: jaot_base
+msgid "Check staleness"
+msgstr "Comprobar obsolescencia"
+
+#. module: jaot_base
+msgid "Code"
+msgstr "Código"
+
+#. module: jaot_base
+msgid "Company"
+msgstr "Empresa"
+
+#. module: jaot_base
+msgid "Compare with baseline"
+msgstr "Comparar con la referencia"
+
+#. module: jaot_base
+msgid "Configuration"
+msgstr "Configuración"
+
+#. module: jaot_base
+msgid "Connection"
+msgstr "Conexión"
+
+#. module: jaot_base
+msgid "Connections"
+msgstr "Conexiones"
+
+#. module: jaot_base
+msgid "Constant value"
+msgstr "Valor constante"
+
+#. module: jaot_base
+msgid "Constraint"
+msgstr "Restricción"
+
+#. module: jaot_base
+msgid "Constraint RHS"
+msgstr "Lado derecho de restricción"
+
+#. module: jaot_base
+msgid "Create a connection to your self-hosted JAOT instance."
+msgstr "Cree una conexión con su instancia de JAOT autoalojada."
+
+#. module: jaot_base
+msgid "Create a named case that re-solves a solved scenario with\n                perturbed parameter roles, run it, and compare the cases."
+msgstr "Cree un caso con nombre que resuelva de nuevo un escenario resuelto con\n                roles de parámetros perturbados, ejecútelo y compare los casos."
+
+#. module: jaot_base
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: jaot_base
+msgid "Created on"
+msgstr "Creado el"
+
+#. module: jaot_base
+msgid "Data Type"
+msgstr "Tipo de datos"
+
+#. module: jaot_base
+msgid "Data is current: the source records are unchanged."
+msgstr "Los datos están actualizados: los registros de origen no han cambiado."
+
+#. module: jaot_base
+msgid "Data is stale: the source records changed after extraction."
+msgstr "Los datos están obsoletos: los registros de origen cambiaron tras la extracción."
+
+#. module: jaot_base
+msgid "Data snapshot hash"
+msgstr "Hash de la instantánea de datos"
+
+#. module: jaot_base
+msgid "Date"
+msgstr "Fecha"
+
+#. module: jaot_base
+msgid "Decision"
+msgstr "Decisión"
+
+#. module: jaot_base
+msgid "Decision (raw)"
+msgstr "Decisión (bruta)"
+
+#. module: jaot_base
+msgid "Decision flip"
+msgstr "Inversión de decisión"
+
+#. module: jaot_base
+msgid "Default solver"
+msgstr "Solver por defecto"
+
+#. module: jaot_base
+msgid "Delta vs baseline"
+msgstr "Diferencia vs referencia"
+
+#. module: jaot_base
+msgid "Description"
+msgstr "Descripción"
+
+#. module: jaot_base
+msgid "Direction"
+msgstr "Dirección"
+
+#. module: jaot_base
+msgid "Display Name"
+msgstr "Nombre de visualización"
+
+#. module: jaot_base
+msgid "Domain"
+msgstr "Dominio"
+
+#. module: jaot_base
+msgid "Done"
+msgstr "Hecho"
+
+#. module: jaot_base
+msgid "Dotted path to the value, e.g. production_id.date_deadline."
+msgstr "Ruta con puntos hasta el valor, p. ej. production_id.date_deadline."
+
+#. module: jaot_base
+msgid "Draft"
+msgstr "Borrador"
+
+#. module: jaot_base
+msgid "Each perturbation entry must be an object {role_id, mode, value}."
+msgstr "Cada entrada de perturbación debe ser un objeto {role_id, mode, value}."
+
+#. module: jaot_base
+msgid "Error / infeasibility"
+msgstr "Error / inviabilidad"
+
+#. module: jaot_base
+msgid "Explanation"
+msgstr "Explicación"
+
+#. module: jaot_base
+msgid "Explanation text"
+msgstr "Texto de la explicación"
+
+#. module: jaot_base
+msgid "Expression"
+msgstr "Expresión"
+
+#. module: jaot_base
+msgid "Failed"
+msgstr "Fallido"
+
+#. module: jaot_base
+msgid "Family"
+msgstr "Familia"
+
+#. module: jaot_base
+msgid "Field Path"
+msgstr "Ruta de campo"
+
+#. module: jaot_base
+msgid "Field path"
+msgstr "Ruta de campo"
+
+#. module: jaot_base
+msgid "Followers"
+msgstr "Seguidores"
+
+#. module: jaot_base
+msgid "Followers (Partners)"
+msgstr "Seguidores (socios)"
+
+#. module: jaot_base
+msgid "For a baseline scenario, the optimized scenario it belongs to."
+msgstr "Para un escenario de referencia, el escenario optimizado al que pertenece."
+
+#. module: jaot_base
+msgid "For parameter roles: a literal number (no Odoo source). Ignored for variable/constraint roles, which use res_model + field_path."
+msgstr "Para roles de parámetro: un número literal (sin origen en Odoo). Se ignora para roles de variable/restricción, que usan res_model + field_path."
+
+#. module: jaot_base
+msgid "Forced value"
+msgstr "Valor forzado"
+
+#. module: jaot_base
+msgid "Formulation failed: %s"
+msgstr "La formulación ha fallado: %s"
+
+#. module: jaot_base
+msgid "Forwarded to JAOT options.gap_tolerance (default 0.05)."
+msgstr "Se reenvía a JAOT options.gap_tolerance (predeterminado 0.05)."
+
+#. module: jaot_base
+msgid "Forwarded to JAOT options.time_limit_seconds (SPECS §5.1, default 300)."
+msgstr "Se reenvía a JAOT options.time_limit_seconds (SPECS §5.1, predeterminado 300)."
+
+#. module: jaot_base
+msgid "Gains"
+msgstr "Gana"
+
+#. module: jaot_base
+msgid "Gap"
+msgstr "Brecha"
+
+#. module: jaot_base
+msgid "Gap tolerance"
+msgstr "Tolerancia de brecha"
+
+#. module: jaot_base
+msgid "HR"
+msgstr "RR. HH."
+
+#. module: jaot_base
+msgid "Has Message"
+msgstr "Tiene mensaje"
+
+#. module: jaot_base
+msgid "Hash of the extracted data; used for the staleness warning (SPECS 4.6)."
+msgstr "Hash de los datos extraídos; se usa para la advertencia de obsolescencia (SPECS 4.6)."
+
+#. module: jaot_base
+msgid "How often the ir.cron polls JAOT for running scenarios (SPECS §4.4, default 10 s)."
+msgstr "Frecuencia con la que el ir.cron consulta JAOT sobre los escenarios en ejecución (SPECS §4.4, predeterminado 10 s)."
+
+#. module: jaot_base
+msgid "Human-readable meaning of this role."
+msgstr "Significado legible de este rol."
+
+#. module: jaot_base
+msgid "ID"
+msgstr "ID"
+
+#. module: jaot_base
+msgid "IIS result when the solve is infeasible (SPECS 4.4)."
+msgstr "Resultado IIS cuando la resolución es inviable (SPECS 4.4)."
+
+#. module: jaot_base
+msgid "If checked, new messages require your attention."
+msgstr "Si está marcado, los mensajes nuevos requieren su atención."
+
+#. module: jaot_base
+msgid "If checked, some messages have a delivery error."
+msgstr "Si está marcado, algunos mensajes tienen un error de entrega."
+
+#. module: jaot_base
+msgid "Improves"
+msgstr "Mejora"
+
+#. module: jaot_base
+msgid "Infeasibility analysis"
+msgstr "Análisis de inviabilidad"
+
+#. module: jaot_base
+msgid "Infeasible."
+msgstr "Inviable."
+
+#. module: jaot_base
+msgid "Invalid domain \"%s\": %s"
+msgstr "Dominio no válido \"%s\": %s"
+
+#. module: jaot_base
+msgid "Invalid domain \"%s\": must be a list of conditions."
+msgstr "Dominio no válido \"%s\": debe ser una lista de condiciones."
+
+#. module: jaot_base
+msgid "Invalid expression \"%s\": %s"
+msgstr "Expresión no válida \"%s\": %s"
+
+#. module: jaot_base
+msgid "Is Follower"
+msgstr "Es seguidor"
+
+#. module: jaot_base
+msgid "JAOT"
+msgstr "JAOT"
+
+#. module: jaot_base
+msgid "JAOT Apply Log"
+msgstr "Registro de aplicación JAOT"
+
+#. module: jaot_base
+msgid "JAOT Bindings"
+msgstr "Vinculaciones JAOT"
+
+#. module: jaot_base
+msgid "JAOT Connection"
+msgstr "Conexión JAOT"
+
+#. module: jaot_base
+msgid "JAOT Connections"
+msgstr "Conexiones JAOT"
+
+#. module: jaot_base
+msgid "JAOT Recipe"
+msgstr "Receta JAOT"
+
+#. module: jaot_base
+msgid "JAOT Recipes"
+msgstr "Recetas JAOT"
+
+#. module: jaot_base
+msgid "JAOT Scenario"
+msgstr "Escenario JAOT"
+
+#. module: jaot_base
+msgid "JAOT Scenarios"
+msgstr "Escenarios JAOT"
+
+#. module: jaot_base
+msgid "JAOT Toy Item"
+msgstr "Artículo de juguete JAOT"
+
+#. module: jaot_base
+msgid "JAOT Toy Items"
+msgstr "Artículos de juguete JAOT"
+
+#. module: jaot_base
+msgid "JAOT apply audit log"
+msgstr "Registro de auditoría de aplicación JAOT"
+
+#. module: jaot_base
+msgid "JAOT base URL"
+msgstr "URL base de JAOT"
+
+#. module: jaot_base
+msgid "JAOT binding"
+msgstr "Vinculación JAOT"
+
+#. module: jaot_base
+msgid "JAOT cancel failed: %s"
+msgstr "La cancelación de JAOT ha fallado: %s"
+
+#. module: jaot_base
+msgid "JAOT connection (one per company)"
+msgstr "Conexión JAOT (una por empresa)"
+
+#. module: jaot_base
+msgid "JAOT connection failed: %(exc)s. Detail: %(detail)s"
+msgstr "La conexión con JAOT ha fallado: %(exc)s. Detalle: %(detail)s"
+
+#. module: jaot_base
+msgid "JAOT error"
+msgstr "Error de JAOT"
+
+#. module: jaot_base
+msgid "JAOT expression \"%s\" failed to evaluate: %s"
+msgstr "La expresión JAOT \"%s\" no se pudo evaluar: %s"
+
+#. module: jaot_base
+msgid "JAOT identifiers"
+msgstr "Identificadores JAOT"
+
+#. module: jaot_base
+msgid "JAOT named scenario case"
+msgstr "Caso de escenario con nombre JAOT"
+
+#. module: jaot_base
+msgid "JAOT recipe"
+msgstr "Receta JAOT"
+
+#. module: jaot_base
+msgid "JAOT recipe role"
+msgstr "Rol de receta JAOT"
+
+#. module: jaot_base
+msgid "JAOT scenario"
+msgstr "Escenario JAOT"
+
+#. module: jaot_base
+msgid "JAOT scenario line"
+msgstr "Línea de escenario JAOT"
+
+#. module: jaot_base
+msgid "JAOT scenario what-if row"
+msgstr "Fila what-if de escenario JAOT"
+
+#. module: jaot_base
+msgid "JAOT solver status"
+msgstr "Estado del solver de JAOT"
+
+#. module: jaot_base
+msgid "JAOT submission failed: %s"
+msgstr "El envío a JAOT ha fallado: %s"
+
+#. module: jaot_base
+msgid "JAOT task failed."
+msgstr "La tarea de JAOT ha fallado."
+
+#. module: jaot_base
+msgid "JAOT template"
+msgstr "Plantilla JAOT"
+
+#. module: jaot_base
+msgid "JAOT template slug or id this recipe maps to."
+msgstr "Slug o id de plantilla de JAOT al que se mapea esta receta."
+
+#. module: jaot_base
+msgid "JAOT toy item (knapsack fixture)"
+msgstr "Artículo de juguete JAOT (fixture de mochila)"
+
+#. module: jaot_base
+msgid "JAOT: Manager"
+msgstr "JAOT: Gestor"
+
+#. module: jaot_base
+msgid "JAOT: User"
+msgstr "JAOT: Usuario"
+
+#. module: jaot_base
+msgid "JAOT: reconcile scenarios"
+msgstr "JAOT: reconciliar escenarios"
+
+#. module: jaot_base
+msgid "Jaot Execution"
+msgstr "Ejecución de Jaot"
+
+#. module: jaot_base
+msgid "Jaot Task"
+msgstr "Tarea de Jaot"
+
+#. module: jaot_base
+msgid "KPI headline"
+msgstr "Encabezado KPI"
+
+#. module: jaot_base
+msgid "KPI summary"
+msgstr "Resumen KPI"
+
+#. module: jaot_base
+msgid "Kind"
+msgstr "Tipo"
+
+#. module: jaot_base
+msgid "Kpi Contribution"
+msgstr "Contribución Kpi"
+
+#. module: jaot_base
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: jaot_base
+msgid "Last Updated on"
+msgstr "Última actualización el"
+
+#. module: jaot_base
+msgid "Lines"
+msgstr "Líneas"
+
+#. module: jaot_base
+msgid "Lines changed"
+msgstr "Líneas cambiadas"
+
+#. module: jaot_base
+msgid "List of {role_id, mode: set|scale, value} entries targeting parameter roles of the parent recipe."
+msgstr "Lista de entradas {role_id, mode: set|scale, value} que apuntan a roles de parámetro de la receta padre."
+
+#. module: jaot_base
+msgid "MRP"
+msgstr "MRP"
+
+#. module: jaot_base
+msgid "Manager-readable explanation of the result, filled at reconciliation (SPECS 13.1): the objective decomposed into named terms, the tight constraints in plain language, or the infeasibility summary."
+msgstr "Explicación legible para el gestor del resultado, rellena en la reconciliación (SPECS 13.1): la función objetivo descompuesta en términos con nombre, las restricciones ajustadas en lenguaje llano o el resumen de inviabilidad."
+
+#. module: jaot_base
+msgid "Manages configuration, recipes and bindings; can apply and revert scenarios (SPECS §5.9)."
+msgstr "Gestiona la configuración, las recetas y las vinculaciones; puede aplicar y revertir escenarios (SPECS §5.9)."
+
+#. module: jaot_base
+msgid "Max parallel cases"
+msgstr "Casos paralelos máximos"
+
+#. module: jaot_base
+msgid "Maximize"
+msgstr "Maximizar"
+
+#. module: jaot_base
+msgid "Maximum number of named scenario cases running (queued or solving) at once, per company (SPECS 13.2, default 8)."
+msgstr "Número máximo de casos de escenario con nombre en ejecución (en cola o resolviendo) a la vez, por empresa (SPECS 13.2, predeterminado 8)."
+
+#. module: jaot_base
+msgid "Message Delivery error"
+msgstr "Error de entrega del mensaje"
+
+#. module: jaot_base
+msgid "Messages"
+msgstr "Mensajes"
+
+#. module: jaot_base
+msgid "Minimize"
+msgstr "Minimizar"
+
+#. module: jaot_base
+msgid "Mirrors the state of the case run (SPECS 13.2)."
+msgstr "Refleja el estado de la ejecución del caso (SPECS 13.2)."
+
+#. module: jaot_base
+msgid "Name"
+msgstr "Nombre"
+
+#. module: jaot_base
+msgid "Named cases"
+msgstr "Casos con nombre"
+
+#. module: jaot_base
+msgid "Named scenario cases that re-solve this scenario with perturbed parameter roles."
+msgstr "Casos de escenario con nombre que resuelven de nuevo este escenario con roles de parámetros perturbados."
+
+#. module: jaot_base
+msgid "New API key"
+msgstr "Nueva clave API"
+
+#. module: jaot_base
+msgid "No API key stored for this connection. Set it in the connection form."
+msgstr "No hay clave API guardada para esta conexión. Configúrela en el formulario de conexión."
+
+#. module: jaot_base
+msgid "No JAOT connection configured for this company. Create one in JAOT > Configuration > Connections."
+msgstr "No hay conexión JAOT configurada para esta empresa. Cree una en JAOT > Configuración > Conexiones."
+
+#. module: jaot_base
+msgid "No applied changes to revert for this scenario."
+msgstr "No hay cambios aplicados que revertir para este escenario."
+
+#. module: jaot_base
+msgid "No feasible plan exists: the decision limits conflict with each other."
+msgstr "No existe un plan factible: los límites de decisión se contradicen entre sí."
+
+#. module: jaot_base
+msgid "No feasible plan exists: these requirements conflict with each other: %(reqs)s."
+msgstr "No existe un plan factible: estos requisitos se contradicen entre sí: %(reqs)s."
+
+#. module: jaot_base
+msgid "No formulation is registered for recipe code '%(c)s'."
+msgstr "No hay ninguna formulación registrada para el código de receta '%(c)s'."
+
+#. module: jaot_base
+msgid "No formulation registered for recipe code '%(c)s'."
+msgstr "No hay formulación registrada para el código de receta '%(c)s'."
+
+#. module: jaot_base
+msgid "None"
+msgstr "Ninguno"
+
+#. module: jaot_base
+msgid "None of the plan's target records exist any more; the scenario has not been applied."
+msgstr "Ninguno de los registros objetivo del plan existe ya; el escenario no se ha aplicado."
+
+#. module: jaot_base
+msgid "Not selected"
+msgstr "No seleccionado"
+
+#. module: jaot_base
+msgid "Note"
+msgstr "Nota"
+
+#. module: jaot_base
+msgid "Number"
+msgstr "Número"
+
+#. module: jaot_base
+msgid "Number of Actions"
+msgstr "Número de acciones"
+
+#. module: jaot_base
+msgid "Number of case-run lines whose decision differs from the comparison reference (the parent baseline, or the parent itself when it has no baseline)."
+msgstr "Número de líneas de la ejecución del caso cuya decisión difiere de la referencia de comparación (la referencia del padre, o el propio padre cuando no tiene referencia)."
+
+#. module: jaot_base
+msgid "Number of errors"
+msgstr "Número de errores"
+
+#. module: jaot_base
+msgid "Number of messages requiring action"
+msgstr "Número de mensajes que requieren acción"
+
+#. module: jaot_base
+msgid "Number of messages with delivery error"
+msgstr "Número de mensajes con error de entrega"
+
+#. module: jaot_base
+msgid "Objective %(o)s (%(s)s)"
+msgstr "Objetivo %(o)s (%(s)s)"
+
+#. module: jaot_base
+msgid "Objective Sense"
+msgstr "Sentido del objetivo"
+
+#. module: jaot_base
+msgid "Objective Value"
+msgstr "Valor objetivo"
+
+#. module: jaot_base
+msgid "Objective delta"
+msgstr "Diferencia del objetivo"
+
+#. module: jaot_base
+msgid "Objective delta vs parent"
+msgstr "Diferencia del objetivo vs padre"
+
+#. module: jaot_base
+msgid "Objective unit"
+msgstr "Unidad del objetivo"
+
+#. module: jaot_base
+msgid "Objective value"
+msgstr "Valor objetivo"
+
+#. module: jaot_base
+msgid "Objective value %(v)s (%(s)s):"
+msgstr "Valor objetivo %(v)s (%(s)s):"
+
+#. module: jaot_base
+msgid "Odoo model"
+msgstr "Modelo de Odoo"
+
+#. module: jaot_base
+msgid "Odoo model the role is extracted from, e.g. stock.picking. Required for variable/constraint roles; omitted for parameter roles (which carry a constant_value)."
+msgstr "Modelo de Odoo del que se extrae el rol, p. ej. stock.picking. Obligatorio para roles de variable/restricción; omitido para roles de parámetro (que llevan un constant_value)."
+
+#. module: jaot_base
+msgid "Odoo record id"
+msgstr "Id del registro de Odoo"
+
+#. module: jaot_base
+msgid "One JAOT connection per company (SPECS §5.1)."
+msgstr "Una conexión JAOT por empresa (SPECS §5.1)."
+
+#. module: jaot_base
+msgid "One scenario per JAOT task."
+msgstr "Un escenario por tarea de JAOT."
+
+#. module: jaot_base
+msgid "Only a solved scenario can be analyzed."
+msgstr "Solo un escenario resuelto puede analizarse."
+
+#. module: jaot_base
+msgid "Only a solved scenario can be baselined."
+msgstr "Solo un escenario resuelto puede tomarse como referencia."
+
+#. module: jaot_base
+msgid "Only applied scenarios can be reverted."
+msgstr "Solo los escenarios aplicados pueden revertirse."
+
+#. module: jaot_base
+msgid "Only draft scenarios can be submitted."
+msgstr "Solo los escenarios en borrador pueden enviarse."
+
+#. module: jaot_base
+msgid "Only one binding per role per company."
+msgstr "Solo una vinculación por rol y por empresa."
+
+#. module: jaot_base
+msgid "Only queued or solving scenarios can be cancelled."
+msgstr "Solo los escenarios en cola o en resolución pueden cancelarse."
+
+#. module: jaot_base
+msgid "Only solved scenarios can be applied."
+msgstr "Solo los escenarios resueltos pueden aplicarse."
+
+#. module: jaot_base
+msgid "Optional evaluable Odoo domain restricting the records used."
+msgstr "Dominio de Odoo evaluable y opcional que restringe los registros usados."
+
+#. module: jaot_base
+msgid "Optional restricted expression evaluated over the record values. Only a closed namespace is available (SPECS 5.4). Visible to administrators only."
+msgstr "Expresión restringida opcional evaluada sobre los valores del registro. Solo está disponible un espacio de nombres cerrado (SPECS 5.4). Visible solo para administradores."
+
+#. module: jaot_base
+msgid "Original value"
+msgstr "Valor original"
+
+#. module: jaot_base
+msgid "Parameter"
+msgstr "Parámetro"
+
+#. module: jaot_base
+msgid "Parameter override mode must be 'set' or 'scale', got '%(mode)s'."
+msgstr "El modo de anulación de parámetro debe ser 'set' o 'scale'; se ha recibido '%(mode)s'."
+
+#. module: jaot_base
+msgid "Parameter override names a non-parameter role '%(name)s'."
+msgstr "La anulación de parámetro nombra un rol no parámetro '%(name)s'."
+
+#. module: jaot_base
+msgid "Parameter override names an unknown role '%(role)s'."
+msgstr "La anulación de parámetro nombra un rol desconocido '%(role)s'."
+
+#. module: jaot_base
+msgid "Parameter override value is not a number: %(value)s"
+msgstr "El valor de anulación de parámetro no es un número: %(value)s"
+
+#. module: jaot_base
+msgid "Parameter overrides"
+msgstr "Anulaciones de parámetros"
+
+#. module: jaot_base
+msgid "Parameter overrides must be a list of {role_id, mode, value} objects."
+msgstr "Las anulaciones de parámetros deben ser una lista de objetos {role_id, mode, value}."
+
+#. module: jaot_base
+msgid "Parameter role '%(r)s' constant '%(c)s' is not a number."
+msgstr "La constante '%(c)s' del rol de parámetro '%(r)s' no es un número."
+
+#. module: jaot_base
+msgid "Parameter role '%(r)s' needs a constant value."
+msgstr "El rol de parámetro '%(r)s' necesita un valor constante."
+
+#. module: jaot_base
+msgid "Parent scenario"
+msgstr "Escenario padre"
+
+#. module: jaot_base
+msgid "Paste a new JAOT API key and save the form; it is stored in ir.config_parameter, never on this record."
+msgstr "Pegue una nueva clave API de JAOT y guarde el formulario; se guarda en ir.config_parameter, nunca en este registro."
+
+#. module: jaot_base
+msgid "Payloads"
+msgstr "Cargas"
+
+#. module: jaot_base
+msgid "Perturbation"
+msgstr "Perturbación"
+
+#. module: jaot_base
+msgid "Perturbation mode must be 'set' or 'scale', got '%(mode)s'."
+msgstr "El modo de perturbación debe ser 'set' o 'scale'; se ha recibido '%(mode)s'."
+
+#. module: jaot_base
+msgid "Perturbation names a non-parameter role '%(name)s'."
+msgstr "La perturbación nombra un rol no parámetro '%(name)s'."
+
+#. module: jaot_base
+msgid "Perturbation names an unknown role '%(role)s'."
+msgstr "La perturbación nombra un rol desconocido '%(role)s'."
+
+#. module: jaot_base
+msgid "Perturbation value is not a number: %(value)s"
+msgstr "El valor de perturbación no es un número: %(value)s"
+
+#. module: jaot_base
+msgid "Perturbations of parameter roles applied before extraction: a list of {role_id, mode: set|scale, value}."
+msgstr "Perturbaciones de roles de parámetro aplicadas antes de la extracción: una lista de {role_id, mode: set|scale, value}."
+
+#. module: jaot_base
+msgid "Poll interval"
+msgstr "Intervalo de consulta"
+
+#. module: jaot_base
+msgid "Poll transient error (will retry): %s"
+msgstr "Error transitorio de consulta (se reintentará): %s"
+
+#. module: jaot_base
+msgid "Positive = improvement (sense-aware): for a minimization the parent objective minus the case objective."
+msgstr "Positivo = mejora (según el sentido): para una minimización, el objetivo del padre menos el objetivo del caso."
+
+#. module: jaot_base
+msgid "Purchase"
+msgstr "Compras"
+
+#. module: jaot_base
+msgid "Quantity"
+msgstr "Cantidad"
+
+#. module: jaot_base
+msgid "Queued"
+msgstr "En cola"
+
+#. module: jaot_base
+msgid "RHS (after)"
+msgstr "Lado derecho (después)"
+
+#. module: jaot_base
+msgid "RHS (before)"
+msgstr "Lado derecho (antes)"
+
+#. module: jaot_base
+msgid "RHS delta"
+msgstr "Diferencia del lado derecho"
+
+#. module: jaot_base
+msgid "Recipe"
+msgstr "Receta"
+
+#. module: jaot_base
+msgid "Recipe Role"
+msgstr "Rol de receta"
+
+#. module: jaot_base
+msgid "Recipes"
+msgstr "Recetas"
+
+#. module: jaot_base
+msgid "Reconcile error: %s"
+msgstr "Error de reconciliación: %s"
+
+#. module: jaot_base
+msgid "Record"
+msgstr "Registro"
+
+#. module: jaot_base
+msgid "Reference"
+msgstr "Referencia"
+
+#. module: jaot_base
+msgid "Regret"
+msgstr "Arrepentimiento"
+
+#. module: jaot_base
+msgid "Remove key"
+msgstr "Eliminar clave"
+
+#. module: jaot_base
+msgid "Request payload"
+msgstr "Carga de solicitud"
+
+#. module: jaot_base
+msgid "Requested"
+msgstr "Solicitado"
+
+#. module: jaot_base
+msgid "Required"
+msgstr "Obligatorio"
+
+#. module: jaot_base
+msgid "Required role '%(r)s' of recipe '%(c)s' has no binding for this company."
+msgstr "El rol obligatorio '%(r)s' de la receta '%(c)s' no tiene vinculación para esta empresa."
+
+#. module: jaot_base
+msgid "Response payload"
+msgstr "Carga de respuesta"
+
+#. module: jaot_base
+msgid "Revert"
+msgstr "Revertir"
+
+#. module: jaot_base
+msgid "Revert this applied solution? Records will be restored to their pre-apply values."
+msgstr "¿Revertir esta solución aplicada? Los registros se restaurarán a sus valores previos a la aplicación."
+
+#. module: jaot_base
+msgid "Reverted"
+msgstr "Revertido"
+
+#. module: jaot_base
+msgid "Reverted %(n)s change(s)."
+msgstr "Se han revertido %(n)s cambio(s)."
+
+#. module: jaot_base
+msgid "Reverted At"
+msgstr "Revertido en"
+
+#. module: jaot_base
+msgid "Role"
+msgstr "Rol"
+
+#. module: jaot_base
+msgid "Role '%(r)s' needs a source model (res_model)."
+msgstr "El rol '%(r)s' necesita un modelo de origen (res_model)."
+
+#. module: jaot_base
+msgid "Roles"
+msgstr "Roles"
+
+#. module: jaot_base
+msgid "Run"
+msgstr "Ejecutar"
+
+#. module: jaot_base
+msgid "Same as your current plan (%(o)s)"
+msgstr "Igual que su plan actual (%(o)s)"
+
+#. module: jaot_base
+msgid "Saves"
+msgstr "Ahorra"
+
+#. module: jaot_base
+msgid "Scenario"
+msgstr "Escenario"
+
+#. module: jaot_base
+msgid "Scenario Line"
+msgstr "Línea de escenario"
+
+#. module: jaot_base
+msgid "Scenario case"
+msgstr "Caso de escenario"
+
+#. module: jaot_base
+msgid "Scenario cases"
+msgstr "Casos de escenario"
+
+#. module: jaot_base
+msgid "Scenarios"
+msgstr "Escenarios"
+
+#. module: jaot_base
+msgid "Selected"
+msgstr "Seleccionado"
+
+#. module: jaot_base
+msgid "Semantics"
+msgstr "Semántica"
+
+#. module: jaot_base
+msgid "Sequence"
+msgstr "Secuencia"
+
+#. module: jaot_base
+msgid "Solve"
+msgstr "Resolver"
+
+#. module: jaot_base
+msgid "Solve Time Seconds"
+msgstr "Tiempo de resolución (s)"
+
+#. module: jaot_base
+msgid "Solve behaviour"
+msgstr "Comportamiento de resolución"
+
+#. module: jaot_base
+msgid "Solve is infeasible (IIS captured)."
+msgstr "La resolución es inviable (IIS capturado)."
+
+#. module: jaot_base
+msgid "Solve time (s)"
+msgstr "Tiempo de resolución (s)"
+
+#. module: jaot_base
+msgid "Solve time limit (s)"
+msgstr "Límite de tiempo de resolución (s)"
+
+#. module: jaot_base
+msgid "Solved"
+msgstr "Resuelto"
+
+#. module: jaot_base
+msgid "Solved against stale data"
+msgstr "Resuelto sobre datos obsoletos"
+
+#. module: jaot_base
+msgid "Solved against stale data: the underlying Odoo\n                        records changed after extraction."
+msgstr "Resuelto sobre datos obsoletos: los registros de Odoo subyacentes\n                        cambiaron tras la extracción."
+
+#. module: jaot_base
+msgid "Solved: objective %(o)s (%(s)s)."
+msgstr "Resuelto: objetivo %(o)s (%(s)s)."
+
+#. module: jaot_base
+msgid "Solver Name"
+msgstr "Nombre del solver"
+
+#. module: jaot_base
+msgid "Solver name from JAOT GET /solvers/available (scip, highs, cbc, glpk on v3.9.0); empty = let the server choose. A Char rather than a Selection: the solver set is dynamic per JAOT version, a static list would lie."
+msgstr "Nombre del solver de JAOT GET /solvers/available (scip, highs, cbc, glpk en v3.9.0); vacío = que el servidor elija. Un Char en vez de una Selection: el conjunto de solvers es dinámico por versión de JAOT, una lista estática mentiría."
+
+#. module: jaot_base
+msgid "Solver status"
+msgstr "Estado del solver"
+
+#. module: jaot_base
+msgid "Solving"
+msgstr "Resolviendo"
+
+#. module: jaot_base
+msgid "Source model"
+msgstr "Modelo de origen"
+
+#. module: jaot_base
+msgid "Source record no longer exists"
+msgstr "El registro de origen ya no existe"
+
+#. module: jaot_base
+msgid "State"
+msgstr "Estado"
+
+#. module: jaot_base
+msgid "Status"
+msgstr "Estado"
+
+#. module: jaot_base
+msgid "Stock"
+msgstr "Existencias"
+
+#. module: jaot_base
+msgid "Subject"
+msgstr "Sujeto"
+
+#. module: jaot_base
+msgid "Submitted to JAOT (task %s)."
+msgstr "Enviado a JAOT (tarea %s)."
+
+#. module: jaot_base
+msgid "Target record no longer exists"
+msgstr "El registro objetivo ya no existe"
+
+#. module: jaot_base
+msgid "Terminal solver status reported by JAOT (optimal, time_limit, infeasible, ...)."
+msgstr "Estado terminal del solver informado por JAOT (optimal, time_limit, infeasible, ...)."
+
+#. module: jaot_base
+msgid "Test connection"
+msgstr "Probar conexión"
+
+#. module: jaot_base
+msgid "The JAOT scenario-analysis job result (SPECS 6.2 step 5, P4.3)."
+msgstr "El resultado del trabajo de análisis de escenario de JAOT (SPECS 6.2 paso 5, P4.3)."
+
+#. module: jaot_base
+msgid "The bindings used, captured at extraction time for reproducibility."
+msgstr "Las vinculaciones usadas, capturadas en el momento de la extracción para reproducibilidad."
+
+#. module: jaot_base
+msgid "The child scenario this case launched."
+msgstr "El escenario hijo que este caso ha lanzado."
+
+#. module: jaot_base
+msgid "The extracted data produced no decision variables."
+msgstr "Los datos extraídos no produjeron variables de decisión."
+
+#. module: jaot_base
+msgid "The full JAOT response envelope (SPECS 4.5)."
+msgstr "El sobre de respuesta completo de JAOT (SPECS 4.5)."
+
+#. module: jaot_base
+msgid "The full OptimizationProblem sent to JAOT (SPECS 4.5)."
+msgstr "El OptimizationProblem completo enviado a JAOT (SPECS 4.5)."
+
+#. module: jaot_base
+msgid "The limit of %(limit)d open cases per company is reached."
+msgstr "Se ha alcanzado el límite de %(limit)d casos abiertos por empresa."
+
+#. module: jaot_base
+msgid "The solved scenario whose parameter roles this case perturbs."
+msgstr "El escenario resuelto cuyos roles de parámetro este caso perturba."
+
+#. module: jaot_base
+msgid "This case is already running (%(state)s)."
+msgstr "Este caso ya está en ejecución (%(state)s)."
+
+#. module: jaot_base
+msgid "This scenario has no JAOT execution to analyze."
+msgstr "Este escenario no tiene ninguna ejecución de JAOT que analizar."
+
+#. module: jaot_base
+msgid "This scenario has no decision lines to apply."
+msgstr "Este escenario no tiene líneas de decisión que aplicar."
+
+#. module: jaot_base
+msgid "This scenario re-solves the recipe with every decision pinned to the incumbent plan (SPECS 4.6)."
+msgstr "Este escenario resuelve de nuevo la receta con cada decisión fijada al plan vigente (SPECS 4.6)."
+
+#. module: jaot_base
+msgid "Tightly used constraints:"
+msgstr "Restricciones fuertemente usadas:"
+
+#. module: jaot_base
+msgid "Timed out before a JAOT task was recorded."
+msgstr "Se agotó el tiempo antes de que se registrara una tarea de JAOT."
+
+#. module: jaot_base
+msgid "Toy Items"
+msgstr "Artículos de juguete"
+
+#. module: jaot_base
+msgid "Unchanged"
+msgstr "Sin cambios"
+
+#. module: jaot_base
+msgid "Validate"
+msgstr "Validar"
+
+#. module: jaot_base
+msgid "Value"
+msgstr "Valor"
+
+#. module: jaot_base
+msgid "Variable"
+msgstr "Variable"
+
+#. module: jaot_base
+msgid "Weight"
+msgstr "Peso"
+
+#. module: jaot_base
+msgid "What-if analysis"
+msgstr "Análisis what-if"
+
+#. module: jaot_base
+msgid "What-if analysis failed to start: %s"
+msgstr "El análisis what-if no ha podido iniciarse: %s"
+
+#. module: jaot_base
+msgid "What-if analysis failed."
+msgstr "El análisis what-if ha fallado."
+
+#. module: jaot_base
+msgid "What-if analysis ready."
+msgstr "Análisis what-if listo."
+
+#. module: jaot_base
+msgid "What-if analysis requested."
+msgstr "Análisis what-if solicitado."
+
+#. module: jaot_base
+msgid "What-if error"
+msgstr "Error what-if"
+
+#. module: jaot_base
+msgid "What-if poll transient error (will retry): %s"
+msgstr "Error transitorio de consulta what-if (se reintentará): %s"
+
+#. module: jaot_base
+msgid "What-if reconcile error: %s"
+msgstr "Error de reconciliación what-if: %s"
+
+#. module: jaot_base
+msgid "Whatif Line"
+msgstr "Línea what-if"
+
+#. module: jaot_base
+msgid "Whatif State"
+msgstr "Estado what-if"
+
+#. module: jaot_base
+msgid "Worse by %(d)s (%(p).1f%%) than your current plan (%(b)s -> %(o)s)"
+msgstr "Peor en %(d)s (%(p).1f%%) que su plan actual (%(b)s -> %(o)s)"
+
+#. module: jaot_base
+msgid "You are not allowed to modify JAOT scenarios."
+msgstr "No tiene permiso para modificar escenarios JAOT."
+
+#. module: jaot_base
+msgid "computed, infeasible, or SKIPPED_BUDGET (shown as a bound)."
+msgstr "computed, infeasible o SKIPPED_BUDGET (mostrado como un límite)."
+
+#. module: jaot_base
+msgid "km"
+msgstr "km"
+
+#. module: jaot_base
+msgid "maximized"
+msgstr "maximizado"
+
+#. module: jaot_base
+msgid "maximizing"
+msgstr "maximizando"
+
+#. module: jaot_base
+msgid "minimized"
+msgstr "minimizado"
+
+#. module: jaot_base
+msgid "minimizing"
+msgstr "minimizando"

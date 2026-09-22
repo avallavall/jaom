@@ -1,0 +1,101 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* jaot_stock
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0-20260908\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-22 18:28+0000\n"
+"PO-Revision-Date: 2026-09-22 19:05+0000\n"
+"Last-Translator: JAOM\n"
+"Language: es\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: jaot_stock
+msgid "%(p)s must be visited exactly once"
+msgstr "%(p)s debe visitarse exactamente una vez"
+
+#. module: jaot_stock
+msgid "%(v)s is at its load limit"
+msgstr "%(v)s está en su límite de carga"
+
+#. module: jaot_stock
+msgid "%(v)s · stop %(n)d"
+msgstr "%(v)s · parada %(n)d"
+
+#. module: jaot_stock
+msgid "A picking"
+msgstr "Un albarán"
+
+#. module: jaot_stock
+msgid "Create a routing scenario, solve it, review the per-picking\n                assignment, then apply it."
+msgstr "Cree un escenario de ruteo, resuélvalo, revise la asignación por albarán\n                y, a continuación, aplíquelo."
+
+#. module: jaot_stock
+msgid "Delivery routing (VRP)"
+msgstr "Ruteo de reparto (VRP)"
+
+#. module: jaot_stock
+msgid "Display Name"
+msgstr "Nombre de visualización"
+
+#. module: jaot_stock
+msgid "ID"
+msgstr "ID"
+
+#. module: jaot_stock
+msgid "JAOT route position"
+msgstr "Posición en la ruta JAOT"
+
+#. module: jaot_stock
+msgid "JAOT routing"
+msgstr "Ruteo JAOT"
+
+#. module: jaot_stock
+msgid "JAOT scenario"
+msgstr "Escenario JAOT"
+
+#. module: jaot_stock
+msgid "JAOT vehicle"
+msgstr "Vehículo JAOT"
+
+#. module: jaot_stock
+msgid "Picking %(name)s"
+msgstr "Albarán %(name)s"
+
+#. module: jaot_stock
+msgid "Position of this picking in its vehicle route (0 = not assigned by a routing solution)."
+msgstr "Posición de este albarán en la ruta de su vehículo (0 = no asignado por una solución de ruteo)."
+
+#. module: jaot_stock
+msgid "Routing scenarios"
+msgstr "Escenarios de ruteo"
+
+#. module: jaot_stock
+msgid "The last scenario whose applied solution wrote the routing fields for this picking."
+msgstr "El último escenario cuya solución aplicada escribió los campos de ruteo de este albarán."
+
+#. module: jaot_stock
+msgid "Transfer"
+msgstr "Albarán"
+
+#. module: jaot_stock
+msgid "Vehicle"
+msgstr "Vehículo"
+
+#. module: jaot_stock
+msgid "Vehicle %(n)d"
+msgstr "Vehículo %(n)d"
+
+#. module: jaot_stock
+msgid "Vehicle %(name)s"
+msgstr "Vehículo %(name)s"
+
+#. module: jaot_stock
+msgid "Vehicle assigned to this picking by an applied JAOT routing solution."
+msgstr "Vehículo asignado a este albarán por una solución de ruteo JAOT aplicada."
