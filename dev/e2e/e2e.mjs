@@ -1150,6 +1150,112 @@ case_('vrp_infeasible', async (ctx) => {
   }
 });
 
+case_('named_cases', async (ctx) => {
+  // Named scenario cases (SPECS 13.2, P9.2): two cases on a solved VRP parent.
+  // The optimum for this dataset is a two-tour plan (three pickings on one
+  // vehicle, one on the other), so: capping the fleet at one vehicle forces
+  // a single tour (at least the lone picking changes), and capping each
+  // vehicle at 400 kg (two 200 kg pickings each) forces a 2+2 split (at
+  // least one picking swaps vehicle in each direction). One case is run
+  // through the UI Run button, the other via RPC; both mirror the child run
+  // state and store the comparison against the parent.
+  const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'vrp']], ['id']]))[0];
+  const roles = await ctx.rpc('jaot.recipe.role', 'search_read',
+    [[['recipe_id', '=', recipe.id], ['kind', '=', 'parameter']], ['id', 'name']]);
+  const byName = Object.fromEntries(roles.map((r) => [r.name, r.id]));
+  assert(byName.vehicle_capacity && byName.max_vehicles,
+    `missing vrp parameter roles: ${JSON.stringify(roles)}`);
+
+  const sid = (await ctx.rpc('jaot.scenario', 'create',
+    [[{ name: `E2E CASE P ${Date.now()}`, recipe_id: recipe.id, company_id: 1 }]]))[0];
+  await openForm(ctx.page, sid);
+  await clickBtn(ctx.page, 'Solve');
+  const row = await pollTo(ctx.rpc, sid, 'state', ['solved', 'failed']);
+  assert(row.state === 'solved', `case parent failed: ${row.jaot_error}`);
+  assert(row.line_count === 4, `expected 4 VRP lines on the parent, got ${row.line_count}`);
+
+  // the case action is not in the hard-coded A map, and the manager cannot
+  // read ir.actions.act_window (admin-only in Community): resolve its id
+  // through the module-data registry instead
+  const caseActionId = Number(execSql(
+    "SELECT a.id FROM ir_model_data d " +
+    "JOIN ir_act_window a ON a.id = d.res_id " +
+    "WHERE d.module = 'jaot_base' AND d.name = 'action_jaot_scenario_case'"));
+  assert(caseActionId, 'scenario case action not found');
+
+  const makeCase = (name, perturbation) =>
+    ctx.rpc('jaot.scenario.case', 'create', [[{
+      name, scenario_id: sid, perturbation, company_id: 1,
+    }]]).then((r) => r[0]);
+
+  const case1 = await makeCase(`Cap 400 ${Date.now()}`,
+    [{ role_id: byName.vehicle_capacity, mode: 'set', value: 400 }]);
+  const case2 = await makeCase('One vehicle',
+    [{ role_id: byName.max_vehicles, mode: 'set', value: 1 }]);
+
+  // run case 1 through the UI Run button, case 2 via RPC.
+  await openRecord(ctx.page, caseActionId, case1);
+  await clickBtn(ctx.page, 'Run');
+  const run1 = (await ctx.rpc('jaot.scenario.case', 'read', [[case1], ['case_run_id', 'state']]))[0];
+  assert(run1.case_run_id && run1.state === 'queued',
+    `case 1 not queued after Run: ${JSON.stringify(run1)}`);
+  await ctx.rpc('jaot.scenario.case', 'action_run_case', [[case2]]);
+  const run2 = (await ctx.rpc('jaot.scenario.case', 'read', [[case2], ['case_run_id', 'state']]))[0];
+  assert(run2.case_run_id && run2.state === 'queued',
+    `case 2 not queued after run: ${JSON.stringify(run2)}`);
+
+  // two open cases must not trip the parallelism guard (default cap 8).
+  const open = await ctx.rpc('jaot.scenario.case', 'search_count',
+    [[['state', 'in', ['queued', 'solving']]]]);
+  assert(open >= 2, `expected 2 open cases, got ${open}`);
+
+  const child1 = run1.case_run_id[0];
+  const child2 = run2.case_run_id[0];
+  const c1 = await pollTo(ctx.rpc, child1, 'state', ['solved', 'failed']);
+  const c2 = await pollTo(ctx.rpc, child2, 'state', ['solved', 'failed']);
+  assert(c1.state === 'solved', `case 1 run failed: ${c1.jaot_error}`);
+  assert(c2.state === 'solved', `case 2 run failed: ${c2.jaot_error}`);
+
+  // the case state mirrors the child run.
+  const m1 = (await ctx.rpc('jaot.scenario.case', 'read', [[case1], ['state']]))[0];
+  const m2 = (await ctx.rpc('jaot.scenario.case', 'read', [[case2], ['state']]))[0];
+  assert(m1.state === 'solved' && m2.state === 'solved',
+    `case state not mirrored: ${m1.state}, ${m2.state}`);
+
+  // 2+2 split: at least one picking swaps vehicle in each direction, so at
+  // least two lines differ from the parent's 3+1 plan, and the vehicle delta
+  // was written on them.
+  const comp1 = (await ctx.rpc('jaot.scenario.case', 'read',
+    [[case1], ['objective_delta_vs_parent', 'line_changes']]))[0];
+  assert(typeof comp1.objective_delta_vs_parent === 'number',
+    `case 1 delta not a number: ${JSON.stringify(comp1.objective_delta_vs_parent)}`);
+  assert(comp1.line_changes >= 2,
+    `case 1 should change at least 2 pickings (2+2 split), got ${comp1.line_changes}`);
+  const lines1 = await ctx.rpc('jaot.scenario.line', 'search_read',
+    [[['scenario_id', '=', child1]], ['id', 'delta_vs_baseline']], {}, { limit: 20 });
+  assert(lines1.length === 4, `expected 4 lines on the case-1 run, got ${lines1.length}`);
+  const withVehicleDelta = lines1.filter(
+    (l) => l.delta_vs_baseline && l.delta_vs_baseline.jaot_vehicle_id);
+  assert(withVehicleDelta.length >= 2,
+    `expected vehicle deltas on at least 2 lines, got ${withVehicleDelta.length}`);
+
+  // one-vehicle cap: the lone picking on the second tour must join the other.
+  const comp2 = (await ctx.rpc('jaot.scenario.case', 'read',
+    [[case2], ['objective_delta_vs_parent', 'line_changes']]))[0];
+  assert(typeof comp2.objective_delta_vs_parent === 'number',
+    `case 2 delta not a number: ${JSON.stringify(comp2.objective_delta_vs_parent)}`);
+  assert(comp2.line_changes >= 1,
+    `case 2 should change at least 1 picking, got ${comp2.line_changes}`);
+
+  // the case form renders the comparison values.
+  await openRecord(ctx.page, caseActionId, case1);
+  const form = ctx.page.locator('.o_form_view:visible', { hasText: /Scenario case/i });
+  await form.first().waitFor({ state: 'visible', timeout: 15000 });
+  const text = await form.first().innerText();
+  assert(/Objective delta vs parent/i.test(text), 'case form missing the objective delta');
+  assert(/Lines changed/i.test(text), 'case form missing the line changes');
+});
+
 case_('staleness_detection', async (ctx) => {
   const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'mrp']], ['id']]))[0];
   const sid = (await ctx.rpc('jaot.scenario', 'create', [[{ name: `E2E STALE ${Date.now()}`, recipe_id: recipe.id, company_id: 1 }]]))[0];

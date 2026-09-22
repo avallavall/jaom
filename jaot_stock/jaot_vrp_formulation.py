@@ -76,6 +76,19 @@ class Vrp(JaotFormulation):
         vehicle_ids = sorted(vehicles)
         n_veh = len(vehicle_ids)
 
+        # Fleet-size cap (SPECS 13.2): the optional max_vehicles parameter
+        # role (set by a named scenario case) limits the plan to the first
+        # N vehicles in sorted-res_id order. Unbound by default: no cap.
+        max_vehicles = (snapshot.get('_parameters', {})
+                        .get('max_vehicles'))
+        if max_vehicles is not None:
+            max_vehicles = float(max_vehicles)
+            if max_vehicles < 0 or max_vehicles != int(max_vehicles):
+                raise ValueError(
+                    'vrp: max_vehicles must be a non-negative integer')
+            n_veh = min(n_veh, int(max_vehicles))
+            vehicle_ids = vehicle_ids[:n_veh]
+
         # node 0 = depot, nodes 1..n = orders in sorted res_id order
         nodes = [(depot_lat, depot_lng)] + [
             (float(orders[oid].get('order_lat')),

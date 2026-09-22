@@ -76,6 +76,45 @@ class TestVrpFormulation(TransactionCase):
         with self.assertRaises(ValueError):
             Vrp().formulate(snap, {})
 
+    # -- fleet-size cap (SPECS 13.2) --------------------------------------
+    def test_max_vehicles_caps_fleet(self):
+        snap = _snapshot()
+        snap['fleet.vehicle'] = {100: {'vehicle': 100},
+                                 101: {'vehicle': 101}}
+        snap['_parameters']['max_vehicles'] = 1
+        problem = Vrp().formulate(snap, {})
+        meta = problem['metadata']
+        self.assertEqual(meta['n_vehicles'], 1)
+        self.assertEqual(meta['vehicles'], [100])
+        names = [v['name'] for v in problem['variables']]
+        # only vehicle 0's arcs exist
+        self.assertTrue(all(n.startswith('x_0_') or n.startswith('u_0_')
+                            for n in names))
+        # the objective only references vehicle 0's arcs
+        self.assertTrue(all('*x_0_' in term for term in
+                            problem['objective']['expression'].split(' + ')))
+
+    def test_max_vehicles_absent_is_unbounded(self):
+        snap = _snapshot()
+        snap['fleet.vehicle'] = {100: {'vehicle': 100},
+                                 101: {'vehicle': 101}}
+        problem = Vrp().formulate(snap, {})
+        self.assertEqual(problem['metadata']['n_vehicles'], 2)
+
+    def test_max_vehicles_zero_yields_no_variables(self):
+        snap = _snapshot()
+        snap['_parameters']['max_vehicles'] = 0
+        problem = Vrp().formulate(snap, {})
+        self.assertEqual(problem['variables'], [])
+        self.assertEqual(problem['metadata']['n_vehicles'], 0)
+
+    def test_max_vehicles_rejects_bad_values(self):
+        for bad in (-1, 1.5):
+            snap = _snapshot()
+            snap['_parameters']['max_vehicles'] = bad
+            with self.assertRaises(ValueError):
+                Vrp().formulate(snap, {})
+
     def test_map_solution_single_tour(self):
         problem = Vrp().formulate(_snapshot(), {})
         # one vehicle, route depot -> 1 -> 2 -> 3 -> depot

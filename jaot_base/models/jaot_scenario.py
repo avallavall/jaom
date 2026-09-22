@@ -58,6 +58,17 @@ class JaotScenario(models.Model):
     baseline_of_id = fields.Many2one(
         'jaot.scenario', string='Baseline of', default=False, copy=False,
         help='For a baseline scenario, the optimized scenario it belongs to.')
+    # Named cases (SPECS 13.2, PLAN P9.2): this scenario is the parent of
+    # its cases, and a case run is a child scenario carrying parameter
+    # overrides that perturb parameter roles before extraction.
+    parameter_overrides = fields.Json(
+        string='Parameter overrides', copy=False,
+        help='Perturbations of parameter roles applied before extraction: '
+             'a list of {role_id, mode: set|scale, value}.')
+    case_ids = fields.One2many(
+        'jaot.scenario.case', 'scenario_id', string='Named cases',
+        help='Named scenario cases that re-solve this scenario with '
+             'perturbed parameter roles.')
     kpi_summary = fields.Json(string='KPI summary', copy=False)
     request_payload = fields.Json(
         string='Request payload',
@@ -334,9 +345,78 @@ class JaotScenario(models.Model):
             for rec, v in zip(records, vals):
                 target.setdefault(rec.id, {})[role.name] = v
 
+        # Bridge augmentation and parameter overrides are applied after
+        # extraction, before the hash: a case run and a plain scenario of
+        # the same parent therefore carry different snapshot hashes
+        # (SPECS 13.2).
+        self._augment_snapshot(snapshot)
+        self._apply_parameter_overrides(snapshot)
+
         canonical = json.dumps(snapshot, sort_keys=True, default=str)
         snap_hash = hashlib.sha256(canonical.encode()).hexdigest()
         return snapshot, snap_hash, binding_snapshot
+
+    def _apply_parameter_overrides(self, snapshot):
+        """Apply this scenario's parameter overrides to the extracted
+        snapshot (SPECS 13.2): each entry targets a parameter role of the
+        recipe and either sets (``set``) or multiplies (``scale``) its
+        current value."""
+        self.ensure_one()
+        overrides = self.parameter_overrides or []
+        if not overrides:
+            return
+        roles_by_id = {r.id: r for r in self.recipe_id.recipe_role_ids}
+        for entry in overrides:
+            if not isinstance(entry, dict):
+                raise UserError(_(
+                    "Parameter overrides must be a list of "
+                    "{role_id, mode, value} objects."))
+            role = roles_by_id.get(int(entry.get('role_id') or 0))
+            if role is None:
+                raise UserError(_(
+                    "Parameter override names an unknown role "
+                    "'%(role)s'.", role=entry.get('role_id')))
+            if role.kind != 'parameter':
+                raise UserError(_(
+                    "Parameter override names a non-parameter role "
+                    "'%(name)s'.", name=role.name))
+            mode = entry.get('mode')
+            if mode not in ('set', 'scale'):
+                raise UserError(_(
+                    "Parameter override mode must be 'set' or 'scale', "
+                    "got '%(mode)s'.", mode=mode))
+            try:
+                value = float(entry.get('value'))
+            except (TypeError, ValueError):
+                raise UserError(_(
+                    "Parameter override value is not a number: "
+                    "%(value)s", value=entry.get('value')))
+            current = snapshot['_parameters'].get(role.name)
+            if mode == 'scale' and current is None:
+                raise UserError(_(
+                    "Cannot scale role '%(name)s': it has no current "
+                    "value.", name=role.name))
+            if mode == 'set':
+                snapshot['_parameters'][role.name] = value
+            else:
+                snapshot['_parameters'][role.name] = current * value
+
+    # Bridge hooks (SPECS 13.2 / 13.4): a bridge module (jaot_stock,
+    # ...) may contribute extra solve options, extra baseline create
+    # values, or snapshot augmentation without touching the base flow.
+    def _extra_solve_options(self):
+        """Extra config_meta entries contributed by a bridge."""
+        return {}
+
+    def _baseline_create_vals(self):
+        """Extra create values for the baseline scenario contributed by a
+        bridge."""
+        return {}
+
+    def _augment_snapshot(self, snapshot):
+        """Hook for a bridge to extend the extracted snapshot before the
+        hash is computed."""
+        return None
 
     # ------------------------------------------------------------------
     # lifecycle (SPECS §4.4)
@@ -372,6 +452,7 @@ class JaotScenario(models.Model):
             'solver_name': config.default_solver or None,
             'is_baseline': self.is_baseline,
         }
+        config_meta.update(self._extra_solve_options())
         try:
             problem = formula.formulate(snapshot, config_meta)
         except ValueError as exc:
@@ -419,6 +500,7 @@ class JaotScenario(models.Model):
             'company_id': self.company_id.id,
             'is_baseline': True,
             'baseline_of_id': self.id,
+            **self._baseline_create_vals(),
         })
         self.baseline_scenario_id = baseline.id
         baseline.action_submit()
@@ -723,6 +805,12 @@ class JaotScenario(models.Model):
                                  s=solver_status or '?'))
         if self.is_baseline and self.baseline_of_id:
             self._store_baseline_delta(self.baseline_of_id)
+        # a named case running this scenario stores its comparison now
+        # that the case run is solved (SPECS 13.2)
+        case = self.env['jaot.scenario.case'].search(
+            [('case_run_id', '=', self.id)], limit=1)
+        if case:
+            case._store_comparison()
 
     # ------------------------------------------------------------------
     # plan explanation (SPECS 13.1)
@@ -831,30 +919,37 @@ class JaotScenario(models.Model):
             'sense': sense,
         })
         parent.kpi_summary = summary
-        self._store_line_deltas(parent)
+        parent._write_line_deltas(self)
 
     def _store_line_deltas(self, parent):
-        """Per-line diff of the optimized plan against the incumbent
-        (SPECS 4.6 line-by-line diff): which decision fields changed and by
-        how much, plus the KPI contribution swing."""
+        """Per-line diff of the optimized plan (the parent) against the
+        incumbent (this baseline scenario), SPECS 4.6 line-by-line diff."""
+        parent._write_line_deltas(self)
+
+    def _write_line_deltas(self, reference):
+        """Write the per-line diff of this scenario's plan against a
+        reference scenario's plan into ``delta_vs_baseline``: which
+        decision fields changed and by how much, plus the KPI contribution
+        swing (SPECS 4.6; generalized in P9.2 so a case run can be diffed
+        against the parent baseline or the parent)."""
         Line = self.env['jaot.scenario.line']
-        baseline_lines = {
+        ref_lines = {
             (l.res_model, l.res_id): l
-            for l in Line.search([('scenario_id', '=', self.id)])}
-        for line in Line.search([('scenario_id', '=', parent.id)]):
-            base = baseline_lines.get((line.res_model, line.res_id))
-            base_dec = (base.decision or {}) if base else {}
+            for l in Line.search([('scenario_id', '=', reference.id)])}
+        for line in Line.search([('scenario_id', '=', self.id)]):
+            ref = ref_lines.get((line.res_model, line.res_id))
+            ref_dec = (ref.decision or {}) if ref else {}
             delta = {}
             for field, opt_val in (line.decision or {}).items():
-                base_val = base_dec.get(field)
-                if base_val != opt_val:
-                    delta[field] = {'baseline': base_val,
+                ref_val = ref_dec.get(field)
+                if ref_val != opt_val:
+                    delta[field] = {'baseline': ref_val,
                                     'optimized': opt_val}
-            if (base and line.kpi_contribution is not None
-                    and base.kpi_contribution is not None
-                    and line.kpi_contribution != base.kpi_contribution):
+            if (ref and line.kpi_contribution is not None
+                    and ref.kpi_contribution is not None
+                    and line.kpi_contribution != ref.kpi_contribution):
                 delta['kpi_delta'] = (line.kpi_contribution
-                                      - base.kpi_contribution)
+                                      - ref.kpi_contribution)
             line.delta_vs_baseline = delta or None
 
     # ------------------------------------------------------------------

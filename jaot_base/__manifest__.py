@@ -29,6 +29,7 @@ No solver runs inside Odoo. No write happens without confirmation.
         'views/jaot_recipe_views.xml',
         'views/jaot_config_views.xml',
         'views/jaot_scenario_views.xml',
+        'views/jaot_scenario_case_views.xml',
         'views/jaot_apply_log_views.xml',
         'views/jaot_menus.xml',
     ],

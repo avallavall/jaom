@@ -47,6 +47,7 @@
                             <field name="solve_time_limit"/>
                             <field name="gap_tolerance"/>
                             <field name="default_solver"/>
+                            <field name="max_parallel_cases"/>
                         </group>
                     </group>
                 </sheet>

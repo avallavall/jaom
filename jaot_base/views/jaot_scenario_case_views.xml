@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Named scenario cases (SPECS 13.2, PLAN P9.2): the comparison list
+         spans all cases of a parent (objective, gap, solve time, the
+         sense-aware delta vs the parent, the lines that changed). -->
+    <record id="action_jaot_scenario_case" model="ir.actions.act_window">
+        <field name="name">Scenario cases</field>
+        <field name="res_model">jaot.scenario.case</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_no_content_smallest">
+                Create a named case that re-solves a solved scenario with
+                perturbed parameter roles, run it, and compare the cases.
+            </p>
+        </field>
+    </record>
+
+    <record id="view_jaot_scenario_case_list" model="ir.ui.view">
+        <field name="name">jaot.scenario.case.list</field>
+        <field name="model">jaot.scenario.case</field>
+        <field name="arch" type="xml">
+            <list string="Scenario cases">
+                <field name="name"/>
+                <field name="scenario_id"/>
+                <field name="state"/>
+                <field name="case_objective"/>
+                <field name="case_gap"/>
+                <field name="case_solve_time"/>
+                <field name="case_solver_status"/>
+                <field name="objective_delta_vs_parent"/>
+                <field name="line_changes"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_jaot_scenario_case_form" model="ir.ui.view">
+        <field name="name">jaot.scenario.case.form</field>
+        <field name="model">jaot.scenario.case</field>
+        <field name="arch" type="xml">
+            <form string="Scenario case">
+                <header>
+                    <button name="action_run_case" type="object"
+                            string="Run" class="btn-primary"
+                            invisible="state in ('queued','solving')"
+                            groups="jaot_base.group_manager"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="scenario_id"
+                                   readonly="state != 'draft'"/>
+                            <field name="state"/>
+                            <field name="perturbation"
+                                   readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="company_id"
+                                  groups="base.group_multi_company"/>
+                            <field name="case_run_id"
+                                  invisible="not case_run_id"/>
+                            <field name="objective_delta_vs_parent"/>
+                            <field name="line_changes"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

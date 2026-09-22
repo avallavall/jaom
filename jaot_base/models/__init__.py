@@ -3,5 +3,6 @@
 from . import jaot_config
 from . import jaot_recipe
 from . import jaot_scenario
+from . import jaot_scenario_case
 from . import jaot_apply_log
 from . import jaot_demo_item

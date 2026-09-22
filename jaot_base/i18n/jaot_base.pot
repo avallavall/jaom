@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0-20260908\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-21 11:25+0000\n"
-"PO-Revision-Date: 2026-09-21 11:25+0000\n"
+"POT-Creation-Date: 2026-09-22 18:28+0000\n"
+"PO-Revision-Date: 2026-09-22 18:28+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -25,6 +25,12 @@ msgstr ""
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "%(b)s -> %(a)s"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario_case.py:0
+msgid "%(parent)s · case %(name)s"
 msgstr ""
 
 #. module: jaot_base
@@ -64,6 +70,20 @@ msgstr ""
 #. module: jaot_base
 #: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
 msgid "<strong>Result:</strong>"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario_case.py:0
+msgid "A case can only be run on a solved scenario (currently '%(state)s')."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario_case.py:0
+msgid ""
+"A case needs a non-empty list of parameter perturbations (each {role_id, "
+"mode, value})."
 msgstr ""
 
 #. module: jaot_base
@@ -119,6 +139,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__applied
 #: model:ir.model.fields.selection,name:jaot_base.selection__jaot_apply_log__state__applied
 #: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario__state__applied
+#: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario_case__state__applied
 msgid "Applied"
 msgstr ""
 
@@ -237,6 +258,7 @@ msgstr ""
 
 #. module: jaot_base
 #: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario__state__cancelled
+#: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario_case__state__cancelled
 msgid "Cancelled"
 msgstr ""
 
@@ -249,7 +271,28 @@ msgstr ""
 #. module: jaot_base
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Cannot scale role '%(name)s': it has no current value."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "Cannot write '%(p)s': an intermediate record is missing."
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__name
+msgid "Case name"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__case_run_id
+msgid "Case run"
+msgstr ""
+
+#. module: jaot_base
+#: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
+msgid "Cases"
 msgstr ""
 
 #. module: jaot_base
@@ -274,6 +317,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_demo_item__company_id
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe__company_id
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__company_id
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__company_id
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__company_id
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__company_id
 msgid "Company"
@@ -320,6 +364,13 @@ msgid "Create a connection to your self-hosted JAOT instance."
 msgstr ""
 
 #. module: jaot_base
+#: model_terms:ir.actions.act_window,help:jaot_base.action_jaot_scenario_case
+msgid ""
+"Create a named case that re-solves a solved scenario with\n"
+"                perturbed parameter roles, run it, and compare the cases."
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_apply_log__create_uid
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_binding__create_uid
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_config__create_uid
@@ -327,6 +378,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe__create_uid
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe_role__create_uid
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__create_uid
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__create_uid
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__create_uid
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__create_uid
 msgid "Created by"
@@ -340,6 +392,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe__create_date
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe_role__create_date
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__create_date
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__create_date
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__create_date
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__create_date
 msgid "Created on"
@@ -373,9 +426,13 @@ msgid "Date"
 msgstr ""
 
 #. module: jaot_base
-#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__decision
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__decision_text
 msgid "Decision"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__decision
+msgid "Decision (raw)"
 msgstr ""
 
 #. module: jaot_base
@@ -411,6 +468,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe__display_name
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe_role__display_name
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__display_name
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__display_name
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__display_name
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__display_name
 msgid "Display Name"
@@ -434,7 +492,14 @@ msgstr ""
 
 #. module: jaot_base
 #: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario__state__draft
+#: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario_case__state__draft
 msgid "Draft"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario_case.py:0
+msgid "Each perturbation entry must be an object {role_id, mode, value}."
 msgstr ""
 
 #. module: jaot_base
@@ -461,6 +526,7 @@ msgstr ""
 #. module: jaot_base
 #: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario__state__failed
 #: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario__whatif_state__failed
+#: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario_case__state__failed
 msgid "Failed"
 msgstr ""
 
@@ -533,6 +599,7 @@ msgstr ""
 
 #. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__gap
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__case_gap
 msgid "Gap"
 msgstr ""
 
@@ -578,6 +645,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe__id
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe_role__id
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__id
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__id
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__id
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__id
 msgid "ID"
@@ -745,6 +813,11 @@ msgid "JAOT identifiers"
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model,name:jaot_base.model_jaot_scenario_case
+msgid "JAOT named scenario case"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model,name:jaot_base.model_jaot_recipe
 msgid "JAOT recipe"
 msgstr ""
@@ -856,6 +929,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe__write_uid
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe_role__write_uid
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__write_uid
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__write_uid
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__write_uid
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__write_uid
 msgid "Last Updated by"
@@ -869,6 +943,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe__write_date
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe_role__write_date
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__write_date
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__write_date
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_line__write_date
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__write_date
 msgid "Last Updated on"
@@ -878,6 +953,18 @@ msgstr ""
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__line_count
 #: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_form
 msgid "Lines"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__line_changes
+msgid "Lines changed"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,help:jaot_base.field_jaot_scenario_case__perturbation
+msgid ""
+"List of {role_id, mode: set|scale, value} entries targeting parameter roles "
+"of the parent recipe."
 msgstr ""
 
 #. module: jaot_base
@@ -901,8 +988,20 @@ msgid ""
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_config__max_parallel_cases
+msgid "Max parallel cases"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario__objective_sense__maximize
 msgid "Maximize"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,help:jaot_base.field_jaot_config__max_parallel_cases
+msgid ""
+"Maximum number of named scenario cases running (queued or solving) at once, "
+"per company (SPECS 13.2, default 8)."
 msgstr ""
 
 #. module: jaot_base
@@ -923,11 +1022,28 @@ msgid "Minimize"
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,help:jaot_base.field_jaot_scenario_case__state
+msgid "Mirrors the state of the case run (SPECS 13.2)."
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_demo_item__name
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe__name
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_recipe_role__name
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__name
 msgid "Name"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__case_ids
+msgid "Named cases"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,help:jaot_base.field_jaot_scenario__case_ids
+msgid ""
+"Named scenario cases that re-solve this scenario with perturbed parameter "
+"roles."
 msgstr ""
 
 #. module: jaot_base
@@ -1017,6 +1133,14 @@ msgid "Number of Actions"
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,help:jaot_base.field_jaot_scenario_case__line_changes
+msgid ""
+"Number of case-run lines whose decision differs from the comparison "
+"reference (the parent baseline, or the parent itself when it has no "
+"baseline)."
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_config__message_has_error_counter
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__message_has_error_counter
 msgid "Number of errors"
@@ -1056,11 +1180,17 @@ msgid "Objective delta"
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__objective_delta_vs_parent
+msgid "Objective delta vs parent"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__objective_unit
 msgid "Objective unit"
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__case_objective
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_whatif__objective_value
 msgid "Objective value"
 msgstr ""
@@ -1166,6 +1296,41 @@ msgstr ""
 
 #. module: jaot_base
 #. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Parameter override mode must be 'set' or 'scale', got '%(mode)s'."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Parameter override names a non-parameter role '%(name)s'."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Parameter override names an unknown role '%(role)s'."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Parameter override value is not a number: %(value)s"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__parameter_overrides
+msgid "Parameter overrides"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "Parameter overrides must be a list of {role_id, mode, value} objects."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
 #: code:addons/jaot_base/models/jaot_recipe.py:0
 msgid "Parameter role '%(r)s' constant '%(c)s' is not a number."
 msgstr ""
@@ -1174,6 +1339,11 @@ msgstr ""
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_recipe.py:0
 msgid "Parameter role '%(r)s' needs a constant value."
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__scenario_id
+msgid "Parent scenario"
 msgstr ""
 
 #. module: jaot_base
@@ -1189,6 +1359,42 @@ msgid "Payloads"
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__perturbation
+msgid "Perturbation"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario_case.py:0
+msgid "Perturbation mode must be 'set' or 'scale', got '%(mode)s'."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario_case.py:0
+msgid "Perturbation names a non-parameter role '%(name)s'."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario_case.py:0
+msgid "Perturbation names an unknown role '%(role)s'."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario_case.py:0
+msgid "Perturbation value is not a number: %(value)s"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,help:jaot_base.field_jaot_scenario__parameter_overrides
+msgid ""
+"Perturbations of parameter roles applied before extraction: a list of "
+"{role_id, mode: set|scale, value}."
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_config__poll_interval
 msgid "Poll interval"
 msgstr ""
@@ -1197,6 +1403,13 @@ msgstr ""
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "Poll transient error (will retry): %s"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,help:jaot_base.field_jaot_scenario_case__objective_delta_vs_parent
+msgid ""
+"Positive = improvement (sense-aware): for a minimization the parent "
+"objective minus the case objective."
 msgstr ""
 
 #. module: jaot_base
@@ -1211,6 +1424,7 @@ msgstr ""
 
 #. module: jaot_base
 #: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario__state__queued
+#: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario_case__state__queued
 msgid "Queued"
 msgstr ""
 
@@ -1345,6 +1559,11 @@ msgid "Roles"
 msgstr ""
 
 #. module: jaot_base
+#: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_case_form
+msgid "Run"
+msgstr ""
+
+#. module: jaot_base
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "Same as your current plan (%(o)s)"
@@ -1366,6 +1585,18 @@ msgstr ""
 #. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__scenario_line_ids
 msgid "Scenario Line"
+msgstr ""
+
+#. module: jaot_base
+#: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_case_form
+msgid "Scenario case"
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.actions.act_window,name:jaot_base.action_jaot_scenario_case
+#: model:ir.ui.menu,name:jaot_base.menu_jaot_scenario_case
+#: model_terms:ir.ui.view,arch_db:jaot_base.view_jaot_scenario_case_list
+msgid "Scenario cases"
 msgstr ""
 
 #. module: jaot_base
@@ -1416,12 +1647,18 @@ msgid "Solve is infeasible (IIS captured)."
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__case_solve_time
+msgid "Solve time (s)"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_config__solve_time_limit
 msgid "Solve time limit (s)"
 msgstr ""
 
 #. module: jaot_base
 #: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario__state__solved
+#: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario_case__state__solved
 msgid "Solved"
 msgstr ""
 
@@ -1457,7 +1694,13 @@ msgid ""
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__case_solver_status
+msgid "Solver status"
+msgstr ""
+
+#. module: jaot_base
 #: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario__state__solving
+#: model:ir.model.fields.selection,name:jaot_base.selection__jaot_scenario_case__state__solving
 msgid "Solving"
 msgstr ""
 
@@ -1475,6 +1718,7 @@ msgstr ""
 #. module: jaot_base
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_apply_log__state
 #: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario__state
+#: model:ir.model.fields,field_description:jaot_base.field_jaot_scenario_case__state
 msgid "State"
 msgstr ""
 
@@ -1507,6 +1751,7 @@ msgstr ""
 
 #. module: jaot_base
 #: model:ir.model.fields,help:jaot_base.field_jaot_scenario__solver_status
+#: model:ir.model.fields,help:jaot_base.field_jaot_scenario_case__case_solver_status
 msgid ""
 "Terminal solver status reported by JAOT (optimal, time_limit, infeasible, "
 "...)."
@@ -1528,6 +1773,11 @@ msgid "The bindings used, captured at extraction time for reproducibility."
 msgstr ""
 
 #. module: jaot_base
+#: model:ir.model.fields,help:jaot_base.field_jaot_scenario_case__case_run_id
+msgid "The child scenario this case launched."
+msgstr ""
+
+#. module: jaot_base
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "The extracted data produced no decision variables."
@@ -1541,6 +1791,23 @@ msgstr ""
 #. module: jaot_base
 #: model:ir.model.fields,help:jaot_base.field_jaot_scenario__request_payload
 msgid "The full OptimizationProblem sent to JAOT (SPECS 4.5)."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario_case.py:0
+msgid "The limit of %(limit)d open cases per company is reached."
+msgstr ""
+
+#. module: jaot_base
+#: model:ir.model.fields,help:jaot_base.field_jaot_scenario_case__scenario_id
+msgid "The solved scenario whose parameter roles this case perturbs."
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario_case.py:0
+msgid "This case is already running (%(state)s)."
 msgstr ""
 
 #. module: jaot_base
@@ -1667,6 +1934,12 @@ msgstr ""
 #. odoo-python
 #: code:addons/jaot_base/models/jaot_scenario.py:0
 msgid "Worse by %(d)s (%(p).1f%%) than your current plan (%(b)s -> %(o)s)"
+msgstr ""
+
+#. module: jaot_base
+#. odoo-python
+#: code:addons/jaot_base/models/jaot_scenario.py:0
+msgid "You are not allowed to modify JAOT scenarios."
 msgstr ""
 
 #. module: jaot_base

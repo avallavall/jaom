@@ -8,6 +8,13 @@ deterministic, no network. The lifecycle tests patch
 draft -> queued -> solved -> applied -> reverted flow runs offline.
 """
 
+import itertools
+
+# One unique task id per fake client: two scenarios submitted against two
+# fakes in the same test must not collide on the scenario's
+# UNIQUE (jaot_task_id) constraint.
+_FAKE_SEQ = itertools.count(1)
+
 
 class FakeJaotClient:
     """Deterministic offline stand-in for ``JaotClient``.
@@ -26,8 +33,9 @@ class FakeJaotClient:
         self.solver_status = solver_status
         self.poll_status = poll_status
         self._fixed_model_values = model_values
-        self.task_id = 'fake-task-1'
-        self.execution_id = 'fake-exec-1'
+        self._seq = next(_FAKE_SEQ)
+        self.task_id = 'fake-task-%d' % self._seq
+        self.execution_id = 'fake-exec-%d' % self._seq
         self._problem = None
         self.poll_calls = 0
         self.cancelled = False
@@ -184,10 +192,12 @@ class FakeJaotClient:
 
     # -- internals -------------------------------------------------------
     def _items(self):
-        return (self._problem.get('metadata') or {}).get('items', {})
+        problem = self._problem or {}
+        return (problem.get('metadata') or {}).get('items', {})
 
     def _capacity(self):
-        return (self._problem.get('metadata') or {}).get('capacity', 0.0)
+        problem = self._problem or {}
+        return (problem.get('metadata') or {}).get('capacity', 0.0)
 
     def _greedy(self):
         items = self._items()

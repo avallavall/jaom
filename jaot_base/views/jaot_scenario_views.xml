@@ -99,6 +99,21 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Cases" name="cases"
+                              invisible="state not in ('solved','applied')">
+                            <field name="case_ids" nolabel="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="state"/>
+                                    <field name="case_objective"/>
+                                    <field name="case_gap"/>
+                                    <field name="case_solve_time"/>
+                                    <field name="case_solver_status"/>
+                                    <field name="objective_delta_vs_parent"/>
+                                    <field name="line_changes"/>
+                                </list>
+                            </field>
+                        </page>
                         <page string="Error / infeasibility" name="error"
                               invisible="state != 'failed' and not infeasibility">
                             <field name="jaot_error" nolabel="1"/>

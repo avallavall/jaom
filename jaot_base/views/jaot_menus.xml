@@ -41,6 +41,13 @@
         <field name="action" ref="action_jaot_scenario"/>
     </record>
 
+    <record id="menu_jaot_scenario_case" model="ir.ui.menu">
+        <field name="name">Scenario cases</field>
+        <field name="parent_id" ref="menu_jaot_scenario"/>
+        <field name="sequence">10</field>
+        <field name="action" ref="action_jaot_scenario_case"/>
+    </record>
+
     <record id="menu_jaot_apply_log" model="ir.ui.menu">
         <field name="name">Apply Log</field>
         <field name="parent_id" ref="menu_jaot_root"/>

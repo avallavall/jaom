@@ -47,6 +47,10 @@ class JaotConfig(models.Model):
              'cbc, glpk on v3.9.0); empty = let the server choose. A '
              'Char rather than a Selection: the solver set is dynamic per '
              'JAOT version, a static list would lie.')
+    max_parallel_cases = fields.Integer(
+        string='Max parallel cases', default=8,
+        help='Maximum number of named scenario cases running (queued or '
+             'solving) at once, per company (SPECS 13.2, default 8).')
 
     _company_id_uniq = models.Constraint(
         'UNIQUE (company_id)',

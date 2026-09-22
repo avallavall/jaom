@@ -4,6 +4,12 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- New: named scenario cases — re-solve a solved scenario with a named
+  parameter perturbation (set or scale), from the scenario's Cases tab or
+  the new Scenario Cases list, and compare the new plan against the
+  parent: objective delta, lines changed, and the per-line differences.
+  The routing recipe accepts a max-vehicles cap, and the number of
+  parallel case runs per company is configurable.
 - Fix: `docker compose down` / `up` no longer leaves the web client on a
   blank page — the Odoo filestore (asset blobs) is now persisted in a
   volume, so the database and its assets stay in sync across restarts.
