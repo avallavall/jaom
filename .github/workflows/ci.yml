@@ -62,7 +62,7 @@ jobs:
       - name: Run the Odoo test suite (offline, fake JAOT client)
         run: >
           docker compose -f .github/ci.yml run --rm odoo odoo
-          -d ci --stop-after -i stock,delivery,fleet,mrp,jaot_base,jaot_stock,jaot_mrp
+          -d ci --stop-after -i stock,delivery,fleet,mrp,jaot_base,jaot_stock,jaot_mrp,jaot_forecast
           --test-enable
           --test-tags '-base:TestCommand,-account_edi_ubl_cii:CiiExportFacturXFR.test_invoice_deferred_dates'
       - name: Teardown
@@ -120,7 +120,7 @@ jobs:
       - name: Install the addons
         run: >
           docker compose -f .github/ci.yml run --rm odoo odoo
-          -d i18n --stop-after -i stock,delivery,fleet,mrp,jaot_base,jaot_stock,jaot_mrp
+          -d i18n --stop-after -i stock,delivery,fleet,mrp,jaot_base,jaot_stock,jaot_mrp,jaot_forecast
       - name: Regenerate the .pot templates into the checkout
         run: |
           docker compose -f .github/ci.yml run --rm odoo \

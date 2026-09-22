@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Demand-side roles for the production-scheduling (lot-sizing)
+        recipe (SPECS 13.5). Both are optional (required=False) and bound
+        by default to jaot.forecast.demand for the default company: when a
+        company leaves them unbound, the recipe behaves exactly as before
+        (committed MO quantities only). Mirrors the order_qty / order_due
+        split in jaot_mrp/data/jaot_mrp_recipe.xml — one role per field the
+        formulation reads.
+    -->
+    <record id="role_forecast_demand" model="jaot.recipe.role">
+        <field name="recipe_id" ref="jaot_mrp.recipe_mrp"/>
+        <field name="name">forecast_demand</field>
+        <field name="kind">variable</field>
+        <field name="data_type">quantity</field>
+        <field name="required" eval="False"/>
+        <field name="semantics">Forecast demand quantity for a period (jaot.forecast.demand.quantity).</field>
+    </record>
+    <record id="role_forecast_period" model="jaot.recipe.role">
+        <field name="recipe_id" ref="jaot_mrp.recipe_mrp"/>
+        <field name="name">forecast_period</field>
+        <field name="kind">variable</field>
+        <field name="data_type">date</field>
+        <field name="required" eval="False"/>
+        <field name="semantics">Start of the forecast period the demand is due in (jaot.forecast.demand.period_start).</field>
+    </record>
+
+    <!-- ============ default bindings (default company) ============ -->
+    <record id="binding_forecast_demand" model="jaot.binding">
+        <field name="recipe_id" ref="jaot_mrp.recipe_mrp"/>
+        <field name="role_id" ref="role_forecast_demand"/>
+        <field name="res_model">jaot.forecast.demand</field>
+        <field name="field_path">quantity</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+    <record id="binding_forecast_period" model="jaot.binding">
+        <field name="recipe_id" ref="jaot_mrp.recipe_mrp"/>
+        <field name="role_id" ref="role_forecast_period"/>
+        <field name="res_model">jaot.forecast.demand</field>
+        <field name="field_path">period_start</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+</odoo>

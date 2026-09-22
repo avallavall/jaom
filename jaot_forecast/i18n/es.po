@@ -1,0 +1,422 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* jaot_forecast
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0-20260908\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-22 23:09+0000\n"
+"PO-Revision-Date: 2026-09-22 23:09+0000\n"
+"Last-Translator: JAOM\n"
+"Language: es\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: jaot_forecast
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "<span class=\"o_stat_value\">Demand rows</span>"
+msgstr "<span class=\"o_stat_value\">Filas de demanda</span>"
+
+#. module: jaot_forecast
+#: model:ir.model.fields.selection,name:jaot_forecast.selection__jaot_forecast__abc_class__a
+msgid "A"
+msgstr "A"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__adi
+msgid "ADI"
+msgstr "ADI"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__abc_class
+msgid "Abc Class"
+msgstr "Clase ABC"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__alpha
+msgid "Alpha"
+msgstr "Alfa"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__adi
+msgid ""
+"Average inter-demand interval: mean number of periods between consecutive "
+"nonzero-demand periods."
+msgstr ""
+"Intervalo medio entre demandas: número medio de períodos entre períodos "
+"consecutivos con demanda no nula."
+
+#. module: jaot_forecast
+#: model:ir.model.fields.selection,name:jaot_forecast.selection__jaot_forecast__abc_class__b
+msgid "B"
+msgstr "B"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__mape
+msgid "Backtest MAPE"
+msgstr "MAPE del backtest"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__bias
+msgid "Backtest bias"
+msgstr "Sesgo del backtest"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__beta
+msgid "Beta"
+msgstr "Beta"
+
+#. module: jaot_forecast
+#: model:ir.model.fields.selection,name:jaot_forecast.selection__jaot_forecast__abc_class__c
+msgid "C"
+msgstr "C"
+
+#. module: jaot_forecast
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "Check staleness"
+msgstr "Comprobar caducidad"
+
+#. module: jaot_forecast
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "Classification"
+msgstr "Clasificación"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__company_id
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__company_id
+msgid "Company"
+msgstr "Compañía"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__create_uid
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__create_date
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__create_date
+msgid "Created on"
+msgstr "Creado el"
+
+#. module: jaot_forecast
+#: model:ir.model.fields.selection,name:jaot_forecast.selection__jaot_forecast__method__croston
+msgid "Croston/SBA"
+msgstr "Croston/SBA"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__demand_ids
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "Demand"
+msgstr "Demanda"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__demand_count
+msgid "Demand rows"
+msgstr "Filas de demanda"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__display_name
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__display_name
+msgid "Display Name"
+msgstr "Nombre de visualización"
+
+#. module: jaot_forecast
+#: model:ir.model.fields.selection,name:jaot_forecast.selection__jaot_forecast__method__ets
+msgid "ETS (Holt)"
+msgstr "ETS (Holt)"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__lead_time
+msgid "Effective lead time (in periods) used for the safety stock."
+msgstr ""
+"Tiempo de entrega efectivo (en períodos) utilizado para el stock de "
+"seguridad."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__forecast_id
+msgid "Forecast"
+msgstr "Predicción"
+
+#. module: jaot_forecast
+#: model:ir.actions.act_window,name:jaot_forecast.action_jaot_forecast_demand
+msgid "Forecast demand"
+msgstr "Demanda prevista"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast_demand__quantity
+msgid ""
+"Forecast demand at the chosen service level; the first period includes the "
+"safety stock as an initial buffer."
+msgstr ""
+"Demanda prevista al nivel de servicio elegido; el primer período incluye el "
+"stock de seguridad como colchón inicial."
+
+#. module: jaot_forecast
+#. odoo-python
+#: code:addons/jaot_forecast/models/jaot_forecast.py:0
+msgid "Forecast demand for %(name)s"
+msgstr "Demanda prevista de %(name)s"
+
+#. module: jaot_forecast
+#. odoo-python
+#: code:addons/jaot_forecast/models/jaot_forecast.py:0
+msgid "Forecast is current: the demand history is unchanged."
+msgstr "La predicción está al día: el historial de demanda no ha cambiado."
+
+#. module: jaot_forecast
+#. odoo-python
+#: code:addons/jaot_forecast/models/jaot_forecast.py:0
+msgid "Forecast is stale: the demand history changed after the last refresh."
+msgstr ""
+"La predicción está desactualizada: el historial de demanda cambió tras el "
+"último refresco."
+
+#. module: jaot_forecast
+#: model:ir.actions.act_window,name:jaot_forecast.action_jaot_forecast
+#: model:ir.ui.menu,name:jaot_forecast.menu_jaot_forecast
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "Forecasts"
+msgstr "Predicciones"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__history_hash
+msgid ""
+"Hash of the demand history used for the last refresh; compared by the "
+"staleness check."
+msgstr ""
+"Hash del historial de demanda usado en el último refresco; lo compara la "
+"comprobación de caducidad."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__history_hash
+msgid "History hash"
+msgstr "Hash del historial"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__window_months
+msgid "History window (months) used for the classification and the forecast."
+msgstr ""
+"Ventana del historial (meses) usada para la clasificación y la predicción."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__horizon
+msgid "Horizon"
+msgstr "Horizonte"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__id
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__id
+msgid "ID"
+msgstr "ID"
+
+#. module: jaot_forecast
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "JAOT Demand Forecast"
+msgstr "Predicción de demanda JAOT"
+
+#. module: jaot_forecast
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_list
+msgid "JAOT Demand Forecasts"
+msgstr "Predicciones de demanda JAOT"
+
+#. module: jaot_forecast
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_demand_list
+msgid "JAOT Forecast demand"
+msgstr "Demanda prevista JAOT"
+
+#. module: jaot_forecast
+#: model:ir.model,name:jaot_forecast.model_jaot_forecast
+msgid "JAOT demand forecast"
+msgstr "Predicción de demanda JAOT"
+
+#. module: jaot_forecast
+#: model:ir.model,name:jaot_forecast.model_jaot_forecast_demand
+msgid "JAOT forecast demand row"
+msgstr "Fila de demanda prevista JAOT"
+
+#. module: jaot_forecast
+#: model:ir.actions.server,name:jaot_forecast.ir_cron_jaot_forecast_refresh_ir_actions_server
+msgid "JAOT: refresh demand forecasts"
+msgstr "JAOT: refrescar predicciones de demanda"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__write_uid
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__write_date
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__write_date
+msgid "Last Updated on"
+msgstr "Última actualización el"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__lead_time
+msgid "Lead Time"
+msgstr "Tiempo de entrega"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__alpha
+msgid "Level / demand-size smoothing parameter."
+msgstr "Parámetro de suavizado del nivel / tamaño de la demanda."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__mape
+msgid "Mean absolute percentage error over the held-out tail."
+msgstr "Error porcentual absoluto medio sobre la cola retenida."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__bias
+msgid "Mean signed error (actual - forecast) over the held-out tail."
+msgstr "Error con signo medio (real - previsto) sobre la cola retenida."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__method
+msgid "Method"
+msgstr "Método"
+
+#. module: jaot_forecast
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "Model inputs"
+msgstr "Entradas del modelo"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__name
+msgid "Name"
+msgstr "Nombre"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__horizon
+msgid "Number of future periods to forecast."
+msgstr "Número de períodos futuros a predecir."
+
+#. module: jaot_forecast
+#: model:ir.model.constraint,message:jaot_forecast.constraint_jaot_forecast_product_company_uniq
+msgid "One forecast per product per company."
+msgstr "Una predicción por producto y por compañía."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__quantile_forecasts
+msgid "Per-period forecasts at the chosen service level (list)."
+msgstr "Predicciones por período al nivel de servicio elegido (lista)."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__point_forecasts
+msgid "Per-period point forecasts (list, one per horizon period)."
+msgstr ""
+"Predicciones puntuales por período (lista, una por período del horizonte)."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__period_index
+msgid "Period Index"
+msgstr "Índice del período"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__period_start
+msgid "Period Start"
+msgstr "Inicio del período"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__point_forecasts
+msgid "Point forecasts"
+msgstr "Predicciones puntuales"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__product_id
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__product_id
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "Product"
+msgstr "Producto"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__quantile_forecasts
+msgid "Quantile forecasts"
+msgstr "Predicciones de cuantil"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__safety_stock
+msgid ""
+"Quantile of demand over the effective lead time at the chosen service level."
+msgstr ""
+"Cuantil de la demanda sobre el tiempo de entrega efectivo al nivel de "
+"servicio elegido."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast_demand__quantity
+msgid "Quantity"
+msgstr "Cantidad"
+
+#. module: jaot_forecast
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "Refresh"
+msgstr "Refrescar"
+
+#. module: jaot_forecast
+#. odoo-python
+#: code:addons/jaot_forecast/models/jaot_forecast.py:0
+msgid "Refresh error: %s"
+msgstr "Error de refresco: %s"
+
+#. module: jaot_forecast
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "Results"
+msgstr "Resultados"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__run_at
+msgid "Run at"
+msgstr "Ejecutado el"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__safety_stock
+msgid "Safety stock"
+msgstr "Stock de seguridad"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__service_level
+msgid "Service Level"
+msgstr "Nivel de servicio"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__service_level
+msgid "Service level for the forecast quantiles and the safety stock."
+msgstr ""
+"Nivel de servicio para los cuantiles de la predicción y el stock de "
+"seguridad."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__data_stale
+#: model_terms:ir.ui.view,arch_db:jaot_forecast.view_jaot_forecast_form
+msgid "Stale"
+msgstr "Desactualizado"
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast_demand__period_start
+msgid "Start of the forecast period this row covers."
+msgstr "Inicio del período de predicción que cubre esta fila."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__data_stale
+msgid "The demand history changed after the last refresh."
+msgstr "El historial de demanda cambió tras el último refresco."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__beta
+msgid "Trend / inter-demand-interval smoothing parameter."
+msgstr "Parámetro de suavizado de la tendencia / intervalo entre demandas."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,help:jaot_forecast.field_jaot_forecast__run_at
+msgid "When the forecast was last refreshed."
+msgstr "Cuándo se refrescó la predicción por última vez."
+
+#. module: jaot_forecast
+#: model:ir.model.fields,field_description:jaot_forecast.field_jaot_forecast__window_months
+msgid "Window Months"
+msgstr "Meses de ventana"

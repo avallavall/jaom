@@ -14,9 +14,11 @@ Odoo and no data leaves your infrastructure.
 | `jaot_base` | framework | JAOT connection, recipes, bindings, scenarios, the apply/revert engine, reconciliation cron |
 | `jaot_stock` | delivery routing (VRP) | the `vrp` recipe over `stock.picking` / `stock.warehouse` / `fleet.vehicle`; writes the assigned vehicle + route position onto pickings |
 | `jaot_mrp` | production scheduling | the `mrp` lot-sizing recipe over `mrp.production`; writes `date_start` onto confirmed production orders |
+| `jaot_forecast` | demand forecasting | per-product/per-company demand forecasts from the monthly outgoing history (ETS or Croston/SBA, ABC class, safety stock); the forecasts ride into the `mrp` scenario as extra planned demand |
 
 `jaot_stock` auto-installs when `stock` + `fleet` are present;
-`jaot_mrp` auto-installs when `mrp` is present.
+`jaot_mrp` auto-installs when `mrp` is present; `jaot_forecast`
+auto-installs with `jaot_mrp`.
 
 ## Requirements
 
@@ -29,7 +31,7 @@ Odoo and no data leaves your infrastructure.
 
 ## Installation
 
-1. Copy the three addon directories into your addons path
+1. Copy the four addon directories into your addons path
    (e.g. `/mnt/extra-addons`) and update the addons list.
 2. In Odoo, update the apps list and install **JAOT Base**
    (the bridges follow their `auto_install` rules).
@@ -102,6 +104,26 @@ Odoo and no data leaves your infrastructure.
   **JAOT > Configuration > Bindings**).
 - **Apply writes:** `date_start` on the production order (the day
   the lot is produced).
+
+## The demand forecasting bridge (`jaot_forecast`)
+
+- **History:** done outgoing stock moves per product and company,
+  bucketed per calendar month over a 24-month window.
+- **Classification:** the average inter-demand interval (ADI) picks
+  the method — smooth series run ETS (Holt), intermittent series run
+  Croston/SBA — and the ABC class comes from cross-product usage
+  (80/95 cumulative shares).
+- **Forecast:** one period per month over a 12-period horizon at the
+  chosen service level (quantiles), with a backtest (MAPE, bias) over
+  the held-out tail and a safety stock from the lead time; the first
+  demand row carries the safety stock as an initial buffer.
+- **Staleness:** each refresh stores a hash of the history; the
+  *Check staleness* action flags the forecast when the history moved.
+- **Bridge to planning:** the `mrp` recipe carries two optional
+  variable roles (`forecast_demand`, `forecast_period`) bound to the
+  demand rows, so every scheduling scenario plans the committed orders
+  and the forecast demand together; applying a scenario still only
+  writes the committed orders back.
 
 ## Security
 

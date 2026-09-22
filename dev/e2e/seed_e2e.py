@@ -13,7 +13,8 @@
 # problem; this now keeps exactly two active vehicles.
 #
 # The odoo shell always rolls back on exit, so the seed commits explicitly.
-from datetime import datetime
+import calendar
+from datetime import date, datetime
 
 # ---------------------------------------------------------------- users
 # The manager needs write access to the operational records the scenarios
@@ -99,6 +100,33 @@ for i, (qty, due) in enumerate(mo_specs, start=1):
     print('mo:', mo.id, 'qty:', mo.product_qty, 'state:', mo.state,
           'start:', mo.date_start,
           'deadline:', mo.move_finished_ids.date_deadline)
+
+# ---------------------------------------------------------- demand history
+# Six consecutive months of done outgoing moves for the E2E Widget, up to
+# and including the current month: the historical demand the jaot.forecast
+# module buckets per calendar month (P9.5). The unbroken run keeps the
+# series smooth (ADI 1.0), so the refresh must pick ETS. `origin` is the
+# unique idempotency key per month.
+today = datetime.now()
+for n in range(1, 7):  # the current month and the five before it
+    m = today.month - n
+    y = today.year + m // 12
+    m = m % 12 + 1
+    key = f'E2E HIST {y:04d}-{m:02d}'
+    day = min(15, calendar.monthrange(y, m)[1])
+    if not env['stock.move'].search([('origin', '=', key)], limit=1):
+        env['stock.move'].create({
+            'origin': key,
+            'product_id': product.id,
+            'product_uom': product.uom_id.id,
+            'product_uom_qty': 12.0,
+            'location_id': wh.lot_stock_id.id,
+            'location_dest_id': env.ref('stock.stock_location_customers').id,
+            'state': 'done',
+            'date': date(y, m, day).isoformat(),
+            'company_id': env.company.id,
+        })
+    print('history:', key, date(y, m, day).isoformat())
 
 # ---------------------------------------------------------------- routing
 wh.partner_id.partner_latitude = 40.4168

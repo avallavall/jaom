@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_jaot_forecast_system,jaot.forecast.system,model_jaot_forecast,base.group_system,1,1,1,1
+access_jaot_forecast_manager,jaot.forecast.manager,model_jaot_forecast,jaot_base.group_manager,1,1,1,1
+access_jaot_forecast_user,jaot.forecast.user,model_jaot_forecast,jaot_base.group_user,1,0,0,0
+access_jaot_forecast_demand_system,jaot.forecast.demand.system,model_jaot_forecast_demand,base.group_system,1,1,1,1
+access_jaot_forecast_demand_manager,jaot.forecast.demand.manager,model_jaot_forecast_demand,jaot_base.group_manager,1,1,1,1
+access_jaot_forecast_demand_user,jaot.forecast.demand.user,model_jaot_forecast_demand,jaot_base.group_user,1,0,0,0

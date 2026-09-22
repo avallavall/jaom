@@ -26,6 +26,27 @@ def _snapshot():
     }
 
 
+def _snapshot_forecast():
+    """A snapshot that also carries forecast demand rows: one committed MO
+    plus two forecast rows (one due the first day, one due the second)."""
+    return {
+        'mrp.production': {
+            1: {'order_qty': 100.0, 'order_due': '2026-10-05 17:00:00'},
+        },
+        'jaot.forecast.demand': {
+            101: {'forecast_demand': 50.0,
+                  'forecast_period': '2026-10-05 00:00:00'},
+            102: {'forecast_demand': 80.0,
+                  'forecast_period': '2026-10-06 00:00:00'},
+        },
+        '_parameters': {
+            'resource_capacity': 800.0,
+            'setup_cost': 250.0,
+            'holding_cost': 0.5,
+        },
+    }
+
+
 def _snapshot_baseline():
     """A snapshot whose orders carry an incumbent plan: every order starts
     on the first date (2026-10-05), so orders 3 and 4 are held one day."""
@@ -89,6 +110,111 @@ class TestMrpFormulation(TransactionCase):
             del snap['_parameters'][param]
             with self.assertRaises(ValueError):
                 MrpLotSizing().formulate(snap, {})
+
+    # -- forecast demand (SPECS 13.5) -----------------------------------
+    def test_formulate_with_forecast(self):
+        problem = MrpLotSizing().formulate(_snapshot_forecast(), {})
+        names = [v['name'] for v in problem['variables']]
+        meta = problem['metadata']
+        # committed order 1 due day 1; forecast 101 due day 1, 102 due day 2
+        self.assertEqual(meta['days'], ['2026-10-05', '2026-10-06'])
+        self.assertEqual(meta['n_orders'], 1)
+        self.assertEqual(meta['n_forecast'], 2)
+        self.assertEqual(meta['forecast_orders']['102'],
+                         {'qty': 80.0, 'due_day': 2})
+        # synthetic variables are f-prefixed
+        self.assertIn('fx_102_2', names)
+        self.assertIn('fq_102_2', names)
+        self.assertIn('fi_102_1', names)
+        self.assertNotIn('x_102_2', names)
+        by_name = {c['name']: c for c in problem['constraints']}
+        self.assertIn('fdeliver_102', by_name)
+        self.assertIn('fbal_102_1', by_name)
+        self.assertIn('flink_102_2', by_name)
+        # capacity now carries the synthetic demand too
+        self.assertEqual(
+            by_name['cap_1']['expression'],
+            'q_1_1 + fq_101_1 + fq_102_1 <= 800.0')
+        self.assertEqual(
+            by_name['cap_2']['expression'], 'fq_102_2 <= 800.0')
+
+    def test_formulate_forecast_only(self):
+        snap = _snapshot_forecast()
+        snap['mrp.production'] = {}
+        problem = MrpLotSizing().formulate(snap, {})
+        meta = problem['metadata']
+        self.assertEqual(meta['n_orders'], 0)
+        self.assertEqual(meta['n_forecast'], 2)
+        names = [v['name'] for v in problem['variables']]
+        self.assertTrue(any(n.startswith('fx_') for n in names))
+        self.assertFalse(any(n.startswith('x_') for n in names))
+
+    def test_formulate_requires_orders_or_forecast(self):
+        snap = _snapshot_forecast()
+        snap['mrp.production'] = {}
+        snap['jaot.forecast.demand'] = {}
+        with self.assertRaises(ValueError):
+            MrpLotSizing().formulate(snap, {})
+
+    def test_formulate_skips_empty_forecast_rows(self):
+        snap = _snapshot_forecast()
+        # a row with no period and a row with zero quantity are ignored
+        snap['jaot.forecast.demand'][103] = {'forecast_demand': 40.0,
+                                             'forecast_period': None}
+        snap['jaot.forecast.demand'][104] = {'forecast_demand': 0.0,
+                                             'forecast_period':
+                                             '2026-10-06 00:00:00'}
+        problem = MrpLotSizing().formulate(snap, {})
+        self.assertEqual(problem['metadata']['n_forecast'], 2)
+
+    def test_map_solution_ignores_forecast(self):
+        problem = MrpLotSizing().formulate(_snapshot_forecast(), {})
+        model_values = {
+            'x_1_1': 1, 'q_1_1': 100.0,
+            'fx_101_1': 1, 'fq_101_1': 50.0,
+            'fx_102_2': 1, 'fq_102_2': 80.0,
+        }
+        lines = MrpLotSizing().map_solution(problem, model_values)
+        # only the committed MO is written back; forecast rows are not
+        self.assertEqual([l['res_id'] for l in lines], [1])
+        self.assertEqual(lines[0]['res_model'], 'mrp.production')
+        self.assertEqual(lines[0]['decision'],
+                         {'date_start': '2026-10-05 00:00:00'})
+
+    def test_baseline_skips_forecast(self):
+        snap = _snapshot_forecast()
+        snap['mrp.production'][1]['current_start'] = '2026-10-05 06:00:00'
+        problem = MrpLotSizing().formulate(snap, {'is_baseline': True})
+        fixes = [c['name'] for c in problem['constraints']
+                 if c['name'].startswith('fix_')]
+        # only the committed order is pinned; forecast orders are free
+        self.assertTrue(all(f.startswith('fix_1_') for f in fixes))
+        self.assertNotIn('fix_101_1', fixes)
+        self.assertNotIn('fix_102_1', fixes)
+
+    def test_explain_objective_includes_forecast(self):
+        problem = MrpLotSizing().formulate(_snapshot_forecast(), {})
+        f = MrpLotSizing()
+        model_values = {
+            'x_1_1': 1, 'q_1_1': 100.0,
+            'fx_101_1': 1, 'fq_101_1': 50.0,
+            'fx_102_1': 1, 'fq_102_1': 80.0, 'fi_102_1': 80.0,
+        }
+        terms = f.explain_objective(problem, model_values)
+        by_name = {t['name']: t['value'] for t in terms}
+        # 3 setups (order 1 + forecast 101 + 102), 1 day of holding on 102
+        self.assertEqual(by_name['Setups'], 3 * 250.0)
+        self.assertEqual(by_name['Inventory holding'], 0.5 * 80.0)
+
+    def test_explain_fdeliver_label(self):
+        problem = MrpLotSizing().formulate(_snapshot_forecast(), {})
+        f = MrpLotSizing()
+        self.assertEqual(
+            f.explain_constraint('fdeliver_102', problem, None),
+            'Forecast demand must be produced by 2026-10-06')
+        # structural synthetic constraints stay invisible
+        self.assertIsNone(f.explain_constraint('fbal_102_2', problem, None))
+        self.assertIsNone(f.explain_constraint('flink_102_1', problem, None))
 
     def test_map_solution(self):
         problem = MrpLotSizing().formulate(_snapshot(), {})

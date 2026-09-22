@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_jaot_forecast_form" model="ir.ui.view">
+        <field name="name">jaot.forecast.form</field>
+        <field name="model">jaot.forecast</field>
+        <field name="arch" type="xml">
+            <form string="JAOT Demand Forecast">
+                <header>
+                    <button name="action_refresh" type="object"
+                            string="Refresh"
+                            class="btn-primary"
+                            groups="jaot_base.group_manager"/>
+                    <button name="action_check_staleness" type="object"
+                            string="Check staleness"
+                            class="btn-secondary"
+                            groups="jaot_base.group_manager"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_show_demand" type="object"
+                                class="oe_stat_button"
+                                icon="fa-list">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">Demand rows</span>
+                            </div>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Stale"
+                          bg_color="bg-warning"
+                          invisible="not data_stale"/>
+                    <group>
+                        <group string="Product">
+                            <field name="name" readonly="1"/>
+                            <field name="product_id"/>
+                            <field name="company_id"
+                                  groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Classification">
+                            <field name="method"/>
+                            <field name="adi"/>
+                            <field name="abc_class"/>
+                        </group>
+                    </group>
+                    <group string="Model inputs">
+                        <group>
+                            <field name="alpha"/>
+                            <field name="beta"/>
+                            <field name="horizon"/>
+                        </group>
+                        <group>
+                            <field name="window_months"/>
+                            <field name="service_level"/>
+                            <field name="lead_time"/>
+                        </group>
+                    </group>
+                    <group string="Results">
+                        <group>
+                            <field name="safety_stock"/>
+                            <field name="mape"/>
+                            <field name="bias"/>
+                        </group>
+                        <group>
+                            <field name="run_at"/>
+                            <field name="data_stale" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Demand" name="demand">
+                            <field name="demand_ids" nolabel="1">
+                                <list create="0" delete="0" edit="0">
+                                    <field name="period_index"/>
+                                    <field name="period_start"/>
+                                    <field name="quantity"/>
+                                    <field name="product_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Forecasts" name="forecasts">
+                            <group>
+                                <field name="point_forecasts" nolabel="1"
+                                       widget="json"/>
+                                <field name="quantile_forecasts" nolabel="1"
+                                       widget="json"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_jaot_forecast_list" model="ir.ui.view">
+        <field name="name">jaot.forecast.list</field>
+        <field name="model">jaot.forecast</field>
+        <field name="arch" type="xml">
+            <list string="JAOT Demand Forecasts">
+                <field name="product_id"/>
+                <field name="method"/>
+                <field name="adi"/>
+                <field name="abc_class"/>
+                <field name="safety_stock"/>
+                <field name="mape"/>
+                <field name="run_at"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_jaot_forecast_demand_list" model="ir.ui.view">
+        <field name="name">jaot.forecast.demand.list</field>
+        <field name="model">jaot.forecast.demand</field>
+        <field name="arch" type="xml">
+            <list string="JAOT Forecast demand">
+                <field name="forecast_id"/>
+                <field name="product_id"/>
+                <field name="period_index"/>
+                <field name="period_start"/>
+                <field name="quantity"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_jaot_forecast" model="ir.actions.act_window">
+        <field name="name">Forecasts</field>
+        <field name="res_model">jaot.forecast</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_jaot_forecast_demand" model="ir.actions.act_window">
+        <field name="name">Forecast demand</field>
+        <field name="res_model">jaot.forecast.demand</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- The base module owns the app menu (jaot_base/views/jaot_menus.xml);
+         this bridge hangs its own entry on it. -->
+    <record id="menu_jaot_forecast" model="ir.ui.menu">
+        <field name="name">Forecasts</field>
+        <field name="parent_id" ref="jaot_base.menu_jaot_root"/>
+        <field name="sequence">70</field>
+        <field name="action" ref="action_jaot_forecast"/>
+        <field name="group_ids" eval="[(4, ref('jaot_base.group_user'))]"/>
+    </record>
+</odoo>

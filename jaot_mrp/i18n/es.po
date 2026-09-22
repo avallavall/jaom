@@ -37,6 +37,10 @@ msgid "Display Name"
 msgstr "Nombre de visualización"
 
 #. module: jaot_mrp
+msgid "Forecast demand must be produced by %(day)s"
+msgstr "La demanda prevista debe producirse antes del %(day)s"
+
+#. module: jaot_mrp
 msgid "ID"
 msgstr "ID"
 

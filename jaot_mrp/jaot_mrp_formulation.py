@@ -42,14 +42,59 @@ class MrpLotSizing(JaotFormulation):
         """The calendar date (``YYYY-MM-DD``) of a deadline/start value."""
         return str(value)[:10]
 
+    _FORECAST_MODEL = 'jaot.forecast.demand'
+
+    def _emit_order(self, key, qty, due_day, variables, obj_terms,
+                    constraints, setup_cost, holding_cost, fprefix=''):
+        """Emit the lot-sizing variables and constraints for one order.
+
+        ``key`` is the (string) order id embedded in the variable names;
+        ``fprefix`` prefixes every name for the synthetic forecast orders
+        so they never collide with the committed-MO names.
+        """
+        x = f'{fprefix}x_{key}_{{d}}'
+        q = f'{fprefix}q_{key}_{{d}}'
+        i = f'{fprefix}i_{key}_{{d}}'
+        bal = f'{fprefix}bal_{key}_{{d}}'
+        link = f'{fprefix}link_{key}_{{d}}'
+        for d in range(1, due_day + 1):
+            variables.append({
+                'name': x.format(d=d), 'type': 'binary',
+                'lower_bound': 0, 'upper_bound': 1})
+            variables.append({
+                'name': q.format(d=d), 'type': 'continuous',
+                'lower_bound': 0, 'upper_bound': qty})
+            if d < due_day:
+                variables.append({
+                    'name': i.format(d=d), 'type': 'continuous',
+                    'lower_bound': 0, 'upper_bound': qty})
+                obj_terms.append(f'{holding_cost}*{i.format(d=d)}')
+                prev = i.format(d=d - 1) if d > 1 else '0'
+                constraints.append({
+                    'name': bal.format(d=d),
+                    'expression': (
+                        f'{i.format(d=d)} - {prev} - {q.format(d=d)} = 0')})
+            obj_terms.append(f'{setup_cost}*{x.format(d=d)}')
+        # delivery: what is held plus the due-day lot covers the order
+        prev = i.format(d=due_day - 1) if due_day > 1 else '0'
+        constraints.append({
+            'name': f'{fprefix}deliver_{key}',
+            'expression': f'{prev} + {q.format(d=due_day)} = {qty}'})
+        for d in range(1, due_day + 1):
+            constraints.append({
+                'name': link.format(d=d),
+                'expression': f'{q.format(d=d)} - {qty}*{x.format(d=d)} <= 0'})
+
     def formulate(self, snapshot, config_meta):
         orders = snapshot.get(self._ORDER_MODEL, {})
+        forecast_rows = snapshot.get(self._FORECAST_MODEL, {})
         params = snapshot.get('_parameters', {})
         capacity = params.get('resource_capacity')
         setup_cost = params.get('setup_cost')
         holding_cost = params.get('holding_cost')
-        if not orders:
-            raise ValueError('mrp: no production orders extracted')
+        if not orders and not forecast_rows:
+            raise ValueError(
+                'mrp: no production orders or forecast demand extracted')
         if capacity is None:
             raise ValueError('mrp: missing resource_capacity parameter')
         if setup_cost is None:
@@ -60,14 +105,20 @@ class MrpLotSizing(JaotFormulation):
         setup_cost = float(setup_cost)
         holding_cost = float(holding_cost)
 
-        # Days = the distinct deadline dates, sorted (index 1..D).
-        days = sorted({self._day_key(o['order_due']) for o in orders.values()})
+        # Days = the distinct deadline dates of the committed orders UNION
+        # the forecast period dates (index 1..D).
+        day_set = {self._day_key(o['order_due']) for o in orders.values()}
+        for row in forecast_rows.values():
+            period = row.get('forecast_period')
+            if period:
+                day_set.add(self._day_key(period))
+        days = sorted(day_set)
         day_index = {d: i for i, d in enumerate(days, start=1)}
 
-        order_ids = sorted(orders)
-        n = len(order_ids)
         variables, obj_terms, constraints = [], [], []
         meta_orders = {}
+        # committed MOs
+        order_ids = sorted(orders)
         for oid in order_ids:
             o = orders[oid]
             qty = float(o.get('order_qty') or 0.0)
@@ -81,48 +132,46 @@ class MrpLotSizing(JaotFormulation):
                 'due_day': due_day,
                 'start_day': start_day,
             }
-            for d in range(1, due_day + 1):
-                variables.append({
-                    'name': f'x_{oid}_{d}', 'type': 'binary',
-                    'lower_bound': 0, 'upper_bound': 1})
-                variables.append({
-                    'name': f'q_{oid}_{d}', 'type': 'continuous',
-                    'lower_bound': 0, 'upper_bound': qty})
-                if d < due_day:
-                    variables.append({
-                        'name': f'i_{oid}_{d}', 'type': 'continuous',
-                        'lower_bound': 0, 'upper_bound': qty})
-                    obj_terms.append(f'{holding_cost}*i_{oid}_{d}')
-                    prev = f'i_{oid}_{d - 1}' if d > 1 else '0'
-                    constraints.append({
-                        'name': f'bal_{oid}_{d}',
-                        'expression': (
-                            f'i_{oid}_{d} - {prev} - q_{oid}_{d} = 0')})
-                obj_terms.append(f'{setup_cost}*x_{oid}_{d}')
-            # delivery: what is held plus the due-day lot covers the order
-            prev = f'i_{oid}_{due_day - 1}' if due_day > 1 else '0'
-            constraints.append({
-                'name': f'deliver_{oid}',
-                'expression': f'{prev} + q_{oid}_{due_day} = {qty}'})
-            for d in range(1, due_day + 1):
-                constraints.append({
-                    'name': f'link_{oid}_{d}',
-                    'expression': f'q_{oid}_{d} - {qty}*x_{oid}_{d} <= 0'})
-        # daily capacity: the orders due on or after day d
+            self._emit_order(oid, qty, due_day, variables, obj_terms,
+                            constraints, setup_cost, holding_cost)
+        # synthetic forecast orders (SPECS 13.5): each demand row is an
+        # order due in its period; f-prefixed names keep them clear of the
+        # committed-MO names.
+        forecast_specs = []
+        meta_forecast = {}
+        for rowid in sorted(forecast_rows):
+            row = forecast_rows[rowid]
+            qty = float(row.get('forecast_demand') or 0.0)
+            period = row.get('forecast_period')
+            if qty <= 0.0 or not period:
+                continue
+            due_day = day_index.get(self._day_key(period))
+            if due_day is None:
+                continue
+            forecast_specs.append((rowid, qty, due_day))
+            meta_forecast[str(rowid)] = {'qty': qty, 'due_day': due_day}
+            self._emit_order(rowid, qty, due_day, variables, obj_terms,
+                            constraints, setup_cost, holding_cost,
+                            fprefix='f')
+        # daily capacity: committed + forecast orders due on or after day d
         for d in range(1, len(days) + 1):
             terms = [
                 f'q_{oid}_{d}' for oid in order_ids
                 if day_index[self._day_key(orders[oid]['order_due'])] >= d]
+            terms += [
+                f'fq_{rowid}_{d}' for rowid, _qty, due_day in forecast_specs
+                if due_day >= d]
             if terms:
                 constraints.append({
                     'name': f'cap_{d}',
                     'expression': ' + '.join(terms) + f' <= {capacity}'})
 
-        # Baseline (SPECS 4.6 fix-all): pin every order to its incumbent
-        # start day. An order whose incumbent start is missing (or not on
-        # a deadline day) gets all its x variables pinned to 0, so its
-        # delivery constraint is unsatisfiable — the infeasibility the
-        # scenario reports as a finding, not a failure.
+        # Baseline (SPECS 4.6 fix-all): pin every COMMITTED order to its
+        # incumbent start day. Synthetic forecast orders are skipped — they
+        # have no incumbent plan. An order whose incumbent start is missing
+        # (or not on a deadline day) gets all its x variables pinned to 0,
+        # so its delivery constraint is unsatisfiable — the infeasibility
+        # the scenario reports as a finding, not a failure.
         if config_meta.get('is_baseline'):
             for oid in order_ids:
                 meta = meta_orders[str(oid)]
@@ -136,12 +185,15 @@ class MrpLotSizing(JaotFormulation):
         metadata = {
             'days': days,
             'orders': meta_orders,
+            'forecast_orders': meta_forecast,
+            'forecast_model': self._FORECAST_MODEL,
             'order_model': self._ORDER_MODEL,
             'start_field': self._START_FIELD,
             'resource_capacity': capacity,
             'setup_cost': setup_cost,
             'holding_cost': holding_cost,
-            'n_orders': n,
+            'n_orders': len(order_ids),
+            'n_forecast': len(forecast_specs),
             # records the plan explanation may refer to (SPECS 13.1)
             'records': {self._ORDER_MODEL: list(order_ids)},
         }
@@ -211,9 +263,10 @@ class MrpLotSizing(JaotFormulation):
     def explain_objective(self, problem, model_values, record_names=None):
         meta = (problem.get('metadata', {}) or {})
         orders = meta.get('orders', {})
+        forecast_orders = meta.get('forecast_orders', {})
         setup_cost = meta.get('setup_cost', 0.0)
         holding_cost = meta.get('holding_cost', 0.0)
-        if not orders:
+        if not orders and not forecast_orders:
             return None
         setups = 0.0
         holding = 0.0
@@ -224,6 +277,14 @@ class MrpLotSizing(JaotFormulation):
                 if d < o['due_day']:
                     holding += holding_cost * (
                         model_values.get(f'i_{oid}_{d}') or 0)
+        # synthetic forecast orders carry the same setup/holding costs
+        for foid, o in forecast_orders.items():
+            for d in range(1, o['due_day'] + 1):
+                setups += setup_cost * (
+                    model_values.get(f'fx_{foid}_{d}') or 0)
+                if d < o['due_day']:
+                    holding += holding_cost * (
+                        model_values.get(f'fi_{foid}_{d}') or 0)
         return [
             {'name': _('Setups'), 'value': setups},
             {'name': _('Inventory holding'), 'value': holding},
@@ -268,7 +329,16 @@ class MrpLotSizing(JaotFormulation):
             return _('%(order)s keeps its current start day %(day)s',
                     order=self._order_label(oid, record_names),
                     day=days[d - 1])
-        # bal / link: structural flow constraints, nothing for a manager
+        # synthetic forecast orders
+        forecast_orders = meta.get('forecast_orders', {})
+        if name.startswith('fdeliver_'):
+            foid = name.split('_', 1)[1]
+            o = forecast_orders.get(foid)
+            if o is None:
+                return None
+            return _('Forecast demand must be produced by %(day)s',
+                    day=days[o['due_day'] - 1])
+        # bal / link / fbal / flink: structural flow constraints
         return None
 
     # -- human-readable presentation (P9.7) ----------------------------

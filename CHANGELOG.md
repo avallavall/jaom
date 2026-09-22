@@ -4,6 +4,13 @@ All user-facing changes, newest first. One to three lines per entry.
 
 ## Unreleased
 
+- New: demand forecasting for production scheduling — the new
+  Forecasts menu keeps one forecast per product and company from your
+  monthly outgoing demand history: it classifies the item (smooth vs.
+  intermittent series, ABC class), forecasts each future month at the
+  chosen service level with a safety stock, and flags itself when the
+  history changes; scheduling scenarios now plan the committed orders
+  and the forecast demand together.
 - New: intraday re-optimization for routing — when an applied delivery
   plan goes stale because part of it was already served, the new
   *Re-optimize* action re-plans only the remaining pickings: served stops

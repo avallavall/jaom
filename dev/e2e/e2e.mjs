@@ -935,6 +935,67 @@ case_('mrp_cancel', async (ctx) => {
   }
 });
 
+case_('forecast_demand_rows', async (ctx) => {
+  // P9.5 (SPECS 13.5): the demand forecast feeds the MRP problem as
+  // synthetic orders. The seed script provides six consecutive months of
+  // done outgoing moves for the E2E Widget; the refresh buckets them per
+  // calendar month, picks ETS for the smooth series, and materializes one
+  // demand row per horizon period that the mrp recipe binds into the
+  // problem.
+  const product = (await ctx.rpc('product.product', 'search_read', [[['name', '=', 'E2E Widget']], ['id']]))[0];
+  let fc = (await ctx.rpc('jaot.forecast', 'search', [[['product_id', '=', product.id], ['company_id', '=', 1]]]))[0];
+  if (!fc) {
+    fc = (await ctx.rpc('jaot.forecast', 'create', [[{ product_id: product.id, company_id: 1 }]]))[0];
+  }
+  await ctx.rpc('jaot.forecast', 'action_refresh', [[fc]]);
+  const frow = (await ctx.rpc('jaot.forecast', 'read', [[fc],
+    ['method', 'adi', 'abc_class', 'horizon', 'demand_ids', 'run_at', 'history_hash', 'data_stale']]))[0];
+  assert(frow.method === 'ets', `expected ETS for the smooth series, got ${frow.method}`);
+  assert(frow.demand_ids.length === frow.horizon,
+    `expected ${frow.horizon} demand rows, got ${frow.demand_ids.length}`);
+  assert(frow.run_at && frow.history_hash, 'refresh did not record run_at/history_hash');
+  assert(frow.data_stale === false, 'forecast marked stale right after a refresh');
+  // the first period starts the month after the history window ends
+  const first = (await ctx.rpc('jaot.forecast.demand', 'search_read',
+    [[['forecast_id', '=', fc]], ['period_start']], {},
+    { order: 'period_index asc', limit: 1 }))[0];
+  const t = new Date();
+  const nextFirst = new Date(t.getFullYear(), t.getMonth() + 1, 1);
+  const nextKey = `${nextFirst.getFullYear()}-${String(nextFirst.getMonth() + 1).padStart(2, '0')}-01`;
+  assert(first.period_start >= nextKey,
+    `first period ${first.period_start} is not after the window end (${nextKey})`);
+
+  // The MRP problem must carry the synthetic forecast orders.
+  const recipe = (await ctx.rpc('jaot.recipe', 'search_read', [[['code', '=', 'mrp']], ['id']]))[0];
+  const mos0 = await ctx.rpc('mrp.production', 'search_read', [[['name', 'like', 'E2E MO']], ['id', 'date_start']], {}, { limit: 20 });
+  const before = Object.fromEntries(mos0.map((m) => [m.id, m.date_start]));
+  const sid = (await ctx.rpc('jaot.scenario', 'create', [[{ name: `E2E FCST ${Date.now()}`, recipe_id: recipe.id, company_id: 1 }]]))[0];
+  await ctx.rpc('jaot.scenario', 'action_submit', [[sid]]);
+  const row = await pollTo(ctx.rpc, sid, 'state', ['solved', 'failed']);
+  assert(row.state === 'solved', `forecast MRP scenario failed: ${row.jaot_error}`);
+  const problem = (await readScenario(ctx.rpc, sid, ['request_payload'])).request_payload;
+  const varNames = (problem.variables || []).map((v) => v.name);
+  assert(varNames.some((n) => n.startsWith('fx_')), 'no synthetic forecast variables in the problem');
+  assert(problem.metadata && problem.metadata.n_forecast === frow.horizon,
+    `n_forecast ${problem.metadata && problem.metadata.n_forecast}, expected ${frow.horizon}`);
+
+  // Apply + Revert: only the committed MOs are written back and restored.
+  await openForm(ctx.page, sid);
+  await clickBtn(ctx.page, 'Apply');
+  await confirmOk(ctx.page);
+  const after = await readScenario(ctx.rpc, sid, ['state', 'applied']);
+  assert(after.state === 'applied' && after.applied === true, `not applied: ${JSON.stringify(after)}`);
+  await openForm(ctx.page, sid);
+  await clickBtn(ctx.page, 'Revert');
+  await confirmOk(ctx.page);
+  const rev = await readScenario(ctx.rpc, sid, ['state', 'applied']);
+  assert(rev.state === 'solved' && rev.applied === false, `not reverted: ${JSON.stringify(rev)}`);
+  const mosRestored = Object.fromEntries((await ctx.rpc('mrp.production', 'search_read', [[['name', 'like', 'E2E MO']], ['id', 'date_start']], {}, { limit: 20 })).map((m) => [m.id, m.date_start]));
+  for (const [id, d] of Object.entries(before)) {
+    assert(mosRestored[id] === d, `MO ${id} not restored: was ${d}, now ${mosRestored[id]}`);
+  }
+});
+
 case_('orphan_queued_timeout', async (ctx) => {
   // a scenario stuck in queued without a JAOT task id (submit crashed) must
   // be failed by the reconcile backstop, not poll forever.

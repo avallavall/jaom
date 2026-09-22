@@ -7,7 +7,7 @@ modules. One case per user flow; the runner exits `0` only when every case
 passes and writes per-case results (plus a screenshot per failure) to
 `dev/e2e/results/e2e_results.json` (git-ignored).
 
-## What it exercises (42 cases)
+## What it exercises (43 cases)
 
 **Connection management**
 - Manager login and navigation.
@@ -91,6 +91,11 @@ passes and writes per-case results (plus a screenshot per failure) to
   to their vehicle and position, re-routes the rest, stores the delta vs
   the frozen plan on the re-route scenario, and apply/revert round-trips
   without disturbing the served pickings.
+- Demand forecast (P9.5): refreshing the widget's forecast buckets the
+  seeded monthly history, picks ETS for the smooth series, and stores one
+  demand row per horizon period starting the month after the window; an
+  MRP solve then carries the forecast rows in as synthetic orders, and
+  apply/revert round-trips the committed MOs without touching the forecast.
 - Plan explanation: a solved MRP scenario exposes the *Explanation* form
   section — objective terms (setups / inventory holding) and the tightly
   used constraints in plain language, no machine identifiers leaking.
@@ -133,7 +138,8 @@ passes and writes per-case results (plus a screenshot per failure) to
 1. The dev stack is up: `docker compose -f dev/docker-compose.yml up -d`.
 2. The `e2e` database is seeded (users `jaotmgr`/`jaotview`/`e2eadmin`,
    company `E2E B`, the widget product, four confirmed MOs, two active fleet
-   vehicles, four outgoing pickings):
+   vehicles, four outgoing pickings, and six months of done outgoing
+   demand history for the widget):
 
    ```
    docker compose -f dev/docker-compose.yml run --rm odoo \
