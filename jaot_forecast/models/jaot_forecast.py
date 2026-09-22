@@ -15,7 +15,6 @@ from collections import defaultdict
 from datetime import date
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
 
 from ..jaot_forecast_math import (
     _sample_std,
@@ -128,7 +127,7 @@ class JaotForecast(models.Model):
         ending at ``ref_date``'s month, oldest first."""
         y, m = ref_date.year, ref_date.month
         months = []
-        for _ in range(window_months):
+        for _i in range(window_months):
             months.append((y, m))
             m -= 1
             if m == 0:
@@ -248,7 +247,8 @@ class JaotForecast(models.Model):
 
         point, errors = forecast(series, method, alpha, beta, horizon)
         quant = quantiles(point, errors, service_level)
-        bt = backtest(series, method, alpha, beta, min(horizon, len(series) // 2))
+        bt = backtest(
+            series, method, alpha, beta, min(horizon, len(series) // 2))
 
         mean = (sum(series) / len(series)) if series else 0.0
         std = _sample_std(series)
