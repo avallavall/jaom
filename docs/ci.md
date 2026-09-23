@@ -1,11 +1,12 @@
-# CI — local verification record (PLAN P5.7)
+# CI — local verification records
 
 The CI pipeline (`.github/workflows/ci.yml`) has four jobs. GitHub
 Actions itself runs on push to the public repository (the maintainer's
 call — see AGENTS.md: never `git push` unless asked), so this document
 records the local run of each job, with the exact commands, against the
-same pinned images and pinned JAOT commit the workflow uses. Run date:
-2026-09-20.
+same pinned images and pinned JAOT commit the workflow uses. Two
+records: the P5.7 run of 2026-09-20 (below) and the P9.6 gate run of
+2026-09-22 (at the end).
 
 ## Pinned inputs
 
@@ -129,3 +130,78 @@ template, committed with the module).
 
 The SPECS §10 performance targets are documented in `docs/PERF.md`
 (P5.3) — all met.
+
+## P9.6 gate run (2026-09-22)
+
+Same four jobs, same pinned inputs; the only change since P5.7 is that
+the `tests` and `i18n` jobs now install the fourth addon — `-i
+stock,delivery,fleet,mrp,jaot_base,jaot_stock,jaot_mrp,jaot_forecast`
+(`jaot_forecast` auto-installs with `jaot_mrp`; the list spells it out
+to match `.github/workflows/ci.yml`). The same two pinned-image test
+exclusions apply.
+
+### 1. lint
+
+First run flagged three issues in the new `jaot_forecast`
+(`jaot_forecast/models/jaot_forecast.py`): an unused `UserError`
+import, a loop variable shadowing the `_` translation function, and
+one 82-character line. Fixed in `7760df7` (no behaviour change — the
+offline suite was green before and after); rerun: `All checks
+passed!` (ruff 0.15.6).
+
+### 2. tests
+
+```
+docker compose -f .github/ci.yml down -v
+docker compose -f .github/ci.yml up -d db
+docker compose -f .github/ci.yml run --rm odoo odoo \
+  -d ci --stop-after -i stock,delivery,fleet,mrp,jaot_base,jaot_stock,jaot_mrp,jaot_forecast \
+  --test-enable \
+  --test-tags '-base:TestCommand,-account_edi_ubl_cii:CiiExportFacturXFR.test_invoice_deferred_dates'
+```
+
+Result: **0 failed, 0 error(s) of 5711 tests** on a fresh `ci` database
+(27 min) — `jaot_base` 111, `jaot_stock` 28, `jaot_mrp` 32,
+`jaot_forecast` 29 tests. The two `duplicate key` ERROR lines in the
+log are the intentional uniqueness tests
+(`TestConfig.test_one_config_per_company`,
+`TestRecipeAndBinding.test_one_binding_per_role_per_company`), not
+regressions.
+
+### 3. contract-smoke
+
+Run against the live pinned stack (v3.9.0, the same commit built for
+P5.7 — the pinned checkout is unchanged since): `PASS` — all frozen
+fields present (`AsyncSolveEnvelope`, poll status,
+`ModelExecutionResponse`, `ExactAnalysis`), toy MIP solved (objective
+5.0, solver scip). The P9.5 cycle added no API surface, so the frozen
+contract (SPECS §6.4) is untouched.
+
+### 4. i18n
+
+```
+docker compose -f .github/ci.yml run --rm odoo odoo \
+  -d i18n --stop-after -i stock,delivery,fleet,mrp,jaot_base,jaot_stock,jaot_mrp,jaot_forecast
+docker compose -f .github/ci.yml run --rm odoo \
+  odoo shell -d i18n --no-http < dev/gen_i18n.py
+python dev/i18n_check.py
+```
+
+Fresh `i18n` database (75 modules). All four templates regenerated
+into the checkout: the only difference against the committed versions
+is the two re-stamped header lines. `dev/i18n_check.py` — all eight
+lines OK (four pots, four `es` catalogs: 338 / 35 / 18 / 73 entries).
+
+### Final summary
+
+| Job | Result |
+|---|---|
+| lint | pass (after `7760df7` fixed three new issues) |
+| tests | pass — 0 failed, 0 error(s) of 5711 (27 min) |
+| contract-smoke | pass (live run vs the pinned stack) |
+| i18n | pass (regenerate + content check, all four templates) |
+
+Alongside the CI jobs, the gate also re-verified the two dev-stack
+checks on fresh databases: the offline addon suite — `0 failed, 0
+error(s) of 158 tests` (db `p96a`) — and the full live e2e suite
+(`dev/e2e`, Playwright) — `43/43 cases passed`.
